@@ -1,0 +1,92 @@
+name: Refresh private Batspool dashboard
+on:
+  schedule:
+    - cron: '0 3 * * *'
+      timezone: America/Toronto
+    - cron: '15 5 * * *'
+      timezone: America/Toronto
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: private-batspool
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.LIVE_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: live
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check configuration
+        env:
+          CONTESTANT_NAMES: ${{ secrets.CONTESTANT_NAMES }}
+          LIVE_STATE_KEY: ${{ secrets.LIVE_STATE_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          for key in CONTESTANT_NAMES LIVE_STATE_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            if [[ -z "${!key}" ]]; then echo "::error::Missing live environment secret $key"; exit 1; fi
+          done
+      - name: Restore scoring checkpoint
+        env:
+          LIVE_STATE_KEY: ${{ secrets.LIVE_STATE_KEY }}
+        run: |
+          if git fetch origin refs/heads/live-state:refs/remotes/origin/live-state; then
+            git worktree add --detach "$RUNNER_TEMP/live-state" origin/live-state
+            gpg --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt \
+              --output "$RUNNER_TEMP/scores.json" "$RUNNER_TEMP/live-state/scores.json.gpg" <<< "$LIVE_STATE_KEY"
+          else
+            # A network or authentication failure must never reset a checkpoint.
+            if git ls-remote --exit-code --heads origin refs/heads/live-state; then
+              exit 1
+            else
+              [[ $? == 2 ]] || exit 1
+            fi
+            cp data/demo.json "$RUNNER_TEMP/scores.json"
+            git worktree add --detach "$RUNNER_TEMP/live-state" HEAD
+            git -C "$RUNNER_TEMP/live-state" switch --orphan live-state
+          fi
+      - name: Refresh aliases and validate scoring
+        run: python3 scripts/refresh.py "$RUNNER_TEMP/scores.json"
+      - name: Install Wrangler
+        run: npm install --no-save --ignore-scripts wrangler@4
+      - name: Verify production and preview protection
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: python3 scripts/verify_access.py
+      - name: Render private dashboard
+        env:
+          CONTESTANT_NAMES: ${{ secrets.CONTESTANT_NAMES }}
+        run: python3 render_chart.py --live --data "$RUNNER_TEMP/scores.json" --output "$RUNNER_TEMP/private-site"
+      - name: Deploy to the existing protected Cloudflare project
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: 'false'
+        run: npx --no-install wrangler pages deploy "$RUNNER_TEMP/private-site" --project-name batspool2027-private --branch main --commit-dirty=true
+      - name: Verify Access after deployment
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: python3 scripts/verify_access.py
+      - name: Save encrypted checkpoint
+        env:
+          LIVE_STATE_KEY: ${{ secrets.LIVE_STATE_KEY }}
+        working-directory: ${{ runner.temp }}/live-state
+        run: |
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --symmetric \
+            --cipher-algo AES256 --output scores.json.gpg "$RUNNER_TEMP/scores.json" <<< "$LIVE_STATE_KEY"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scores.json.gpg
+          git commit -m 'Save encrypted scoring checkpoint'
+          git push origin HEAD:refs/heads/live-state
+      - name: Remove private build output
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/private-site"

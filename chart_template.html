@@ -1,0 +1,1356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>BAT’S POOL 2027</title>
+<style>
+  :root { color-scheme: light; --ink:#142439; --muted:#65748b; --border:#e1e9f1; --surface:#fff; --canvas:#f5f8fc; --accent:#1476d4; --gap:16px; --panel-pad:20px; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--canvas); color:var(--ink); font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+  .masthead { background:linear-gradient(120deg,#0b2945,#123c63 65%,#16648a); color:#fff; padding:38px 24px 34px; overflow:hidden; position:relative; }
+  .masthead::after { content:""; position:absolute; right:-100px; top:-180px; width:430px; height:430px; border:1px solid rgba(255,255,255,.15); border-radius:50%; box-shadow:0 0 0 85px rgba(255,255,255,.025),0 0 0 170px rgba(255,255,255,.025); pointer-events:none; }
+  .inner { max-width:1180px; margin:auto; position:relative; z-index:1; }
+  .eyebrow { font-size:11px; text-transform:uppercase; letter-spacing:.17em; font-weight:750; color:#9cd7f4; margin:0 0 12px; }
+  h1 { font-size:clamp(30px,5vw,52px); letter-spacing:-.04em; line-height:1.04; margin:0 0 12px; font-weight:830; }
+  .subhead { color:#c8dcec; font-size:14px; margin:0; line-height:1.55; }
+  .hero-row { display:flex; gap:25px; align-items:end; justify-content:space-between; flex-wrap:wrap; }
+  .snapshot-links {display:flex;flex-wrap:wrap;gap:9px;align-items:center;justify-content:flex-end;}
+  .source-site-link {color:#e7f6ff;font-size:12px;font-weight:750;text-decoration:underline;text-underline-offset:3px;}
+  .snapshot-pill { border:1px solid rgba(216,241,255,.3); border-radius:100px; color:#c8eafb; background:rgba(255,255,255,.09); padding:9px 13px; font-size:11px; font-weight:700; white-space:nowrap; }
+  .snapshot-pill::before { content:""; display:inline-block; width:7px; height:7px; background:#9adcf0; border-radius:50%; margin-right:8px; }
+  main { max-width:1180px; margin:auto; padding:20px 20px 42px; min-width:0; }
+  .overview { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--gap); margin-bottom:var(--gap); }
+  .metric { background:#fff; border:1px solid var(--border); border-radius:16px; padding:17px var(--panel-pad); box-shadow:0 3px 14px rgba(35,71,105,.035); min-width:0; }
+  .metric-label { font-size:10px; text-transform:uppercase; font-weight:800; color:#62758b; letter-spacing:.11em; margin-bottom:7px; }
+  .metric-number { font-size:clamp(22px,3vw,32px); font-weight:820; letter-spacing:-.025em; line-height:1.1; font-variant-numeric:tabular-nums; }
+  .metric-foot { color:#687a8d; font-size:12px; margin-top:5px; }
+  .daily-panel { margin-bottom:var(--gap); }
+  .daily-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:15px; }
+  .daily-card { border:1px solid #e0e8f0; border-radius:12px; background:#f9fbfe; padding:13px; min-width:0; }
+  .daily-label { color:#657b91; text-transform:uppercase; letter-spacing:.08em; font-size:10px; font-weight:830; margin:0 0 10px; }
+  .daily-main { font-size:20px; font-weight:850; color:#203b57; line-height:1.16; font-variant-numeric:tabular-nums; }
+  .daily-secondary { color:#6b7d90; font-size:11px; line-height:1.5; margin-top:7px; }
+  .daily-list { display:flex; flex-direction:column; align-items:flex-start; gap:7px; }
+  .daily-person { display:flex; align-items:baseline; gap:5px; flex-wrap:wrap; font-size:12px; line-height:1.4; font-weight:750; color:#263f59; }
+  .daily-person .name-dot { flex-shrink:0; margin-right:2px; }
+  .daily-person .rank-move { font-size:12px; }
+  .daily-money-person { display:flex; align-items:baseline; gap:7px; font-size:12px; line-height:1.4; color:#263f59; }
+  .daily-money-person .place { color:#167f5f; font-size:10px; font-weight:850; width:22px; flex-shrink:0; }
+  .daily-money-person .money-name { flex:1; font-weight:800; }
+  .daily-money-person .money-points { font-variant-numeric:tabular-nums; font-weight:800; }
+  .daily-progress { width:100%; height:8px; border-radius:20px; overflow:hidden; background:#dce8f2; margin-top:12px; }
+  .daily-progress-fill { height:100%; background:linear-gradient(90deg,#2586c8,#1ba38e); border-radius:20px; width:0; }
+  .daily-asof { font-size:11px; font-weight:800; color:#496b86; padding:8px 11px; border-radius:50px; background:#edf4fa; border:1px solid #d6e6f1; }
+  .daily-asof.stale { color:#945e2a; background:#fff4e7; border-color:#f3dec1; }
+  .daily-note { font-size:11px; color:#77879a; line-height:1.5; margin:13px 0 0; }
+  .daily-note a { color:#346f9f; }
+  .panel { background:#fff; border:1px solid var(--border); border-radius:18px; padding:var(--panel-pad); box-shadow:0 6px 24px rgba(29,64,103,.045); min-width:0; }
+  .panel-top { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  .panel-title,.section-title { font-size:20px; font-weight:810; letter-spacing:-.025em; margin:0 0 6px; line-height:1.2; }
+  .panel-subtitle,.section-subtitle { color:var(--muted); font-size:13px; line-height:1.5; margin:0; }
+  .controls { display:flex; flex-wrap:wrap; gap:7px; align-items:center; min-width:0; }
+  button { font:inherit; cursor:pointer; }
+  .range-btn,.secondary-btn { background:#f0f4f8; color:#35516e; border:1px solid transparent; border-radius:9px; padding:9px 12px; font-size:12px; font-weight:750; white-space:nowrap; min-height:40px; }
+  .range-btn[aria-pressed="true"] { background:#176fc0; color:#fff; border-color:#176fc0; }
+  .secondary-btn { background:#fff; border-color:#d7e3ee; }
+  .range-btn:focus-visible,.secondary-btn:focus-visible,.legend-chip:focus-visible,.mode-btn:focus-visible,.date-field input:focus-visible { outline:3px solid #68addf; outline-offset:2px; }
+  .view-controls { display:flex; flex-wrap:wrap; align-items:end; justify-content:space-between; gap:14px; margin-top:16px; padding:16px 0 0; border-top:1px solid #e8eef4; }
+  .mode-group { display:flex; align-items:center; gap:9px; }
+  .control-caption { font-size:11px; font-weight:800; color:#667c92; }
+  .mode-switch { background:#f0f4f8; border:1px solid #dae5ef; border-radius:10px; padding:3px; display:flex; gap:3px; }
+  .mode-btn { background:transparent; color:#456079; border:0; border-radius:7px; padding:9px 12px; font-weight:770; font-size:12px; min-height:36px; }
+  .mode-btn[aria-pressed="true"] { background:#176fc0; color:#fff; box-shadow:0 2px 6px rgba(16,60,105,.12); }
+  .dates-form { display:flex; flex-wrap:wrap; gap:9px; align-items:end; min-width:0; }
+  .date-field { display:flex; flex-direction:column; gap:4px; color:#667c92; font-size:11px; font-weight:800; }
+  .date-field input { height:40px; border:1px solid #cfdeeb; border-radius:8px; color:#264864; background:#fff; padding:6px 9px; font-size:14px; font-family:inherit; min-width:0; width:144px; }
+  .dates-form .secondary-btn { min-height:40px; }
+  .date-error { font-size:11px; color:#ac3947; margin-top:7px; }
+  .instructions { color:#738299; font-size:11px; line-height:1.5; margin-top:12px; }
+  .benchmark-note { margin:0; padding:10px 13px; background:#f0f5fa; border:1px solid #e2eaf3; border-radius:10px; color:#344960; font-size:12px; display:flex; align-items:center; gap:10px; }
+  .dash-key { display:inline-block; flex:0 0 32px; height:0; border-top:3px dashed #2c4057; }
+  .y-title { color:#65778b; font-size:11px; font-weight:700; margin-top:11px; padding-left:9px; }
+  .line-frame { position:relative; min-width:0; }
+  #chart { width:100%; height:clamp(430px,47vw,510px); margin-top:0; touch-action:pan-y; }
+  .end-label-layer { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+  .end-label-links { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+  .end-name { position:absolute; white-space:nowrap; font-size:11px; line-height:15px; font-weight:850; transform:translateY(-50%); text-shadow:0 0 4px #fff,0 0 4px #fff; }
+  #rangeBars { width:100%; height:clamp(390px,39vw,450px); }
+  .range-summary { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin:4px 0 8px; }
+  .period-label { font-weight:800; font-size:13px; color:#274862; }
+  .period-note { display:flex; align-items:center; gap:6px; color:#60758d; font-size:11px; }
+  .benchmark-tick { display:inline-block; height:16px; width:0; border-left:2px dashed #2c4057; }
+  .puck-window-caption { color:#34516e; font-size:12px; font-weight:750; padding:3px 0 10px; }
+  .puck-scroll { width:100%; max-width:100%; min-width:0; overflow-x:auto; border:1px solid #dce6f0; border-radius:11px; overscroll-behavior-inline:contain; -webkit-overflow-scrolling:touch; }
+  .puck-table { width:max-content; border-collapse:separate; border-spacing:0; font-size:12px; table-layout:fixed; }
+  .puck-table th,.puck-table td { border-right:1px solid #e0e8f0; border-bottom:1px solid #e6edf4; }
+  .puck-table tr:last-child td { border-bottom:0; }
+  .puck-table th:last-child,.puck-table td:last-child { border-right:0; }
+  .puck-table thead th { background:#edf4fa; color:#36526d; padding:10px 5px; text-align:center; font-size:11px; width:94px; height:56px; }
+  .puck-table thead .date-weekday { display:block; font-size:10px; font-weight:600; color:#6b7d90; margin-bottom:2px; }
+  .puck-table th:first-child { position:sticky; left:0; z-index:2; background:#f1f6fb; width:128px; min-width:128px; text-align:left; padding:11px 12px; }
+  .puck-table thead th:first-child { z-index:3; }
+  .puck-table tbody th { font-size:12px; font-weight:800; color:#233d59; }
+  .puck-table td { width:94px; min-width:94px; min-height:65px; padding:7px 8px; text-align:left; vertical-align:top; background:#fff; }
+  .puck-table tbody tr:nth-child(even) td { background:#f9fbfe; }
+  .puck-table .day-count { display:block; font-variant-numeric:tabular-nums; font-size:13px; font-weight:850; color:#253e57; line-height:17px; margin-bottom:4px; }
+  .puck-table td.zero .day-count { color:#9cabb9; }
+  .puck-table .day-heading { display:flex; align-items:center; gap:5px; min-height:17px; margin-bottom:4px; white-space:nowrap; }
+  .puck-table .day-heading .day-count { margin-bottom:0; }
+  .rank-move { display:inline-flex; align-items:center; gap:1px; font-size:11px; line-height:17px; font-weight:850; font-variant-numeric:tabular-nums; }
+  .rank-up { color:#0e8b60; }
+  .rank-down { color:#c43e4b; }
+  .rank-move .rank-arrow { font-size:13px; line-height:1; }
+  .puck-stack { display:flex; flex-wrap:wrap; align-content:flex-start; gap:3px 4px; }
+  .tiny-puck { display:inline-block; flex:0 0 11px; width:11px; height:10px; border-radius:50%; background:linear-gradient(180deg,#657584 0%,#3b4e60 32%,#152536 33%,#0b1827 100%); box-shadow:inset 0 -1px 0 #070f1a,0 1px 1px rgba(9,25,40,.19); }
+  .rank-panel { margin-top:var(--gap); }
+  .rank-panel .panel-top { margin-bottom:13px; }
+  .rank-period { color:#60758d; font-size:12px; font-weight:750; }
+  .rank-change-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .rank-change-item { display:flex; align-items:center; flex-wrap:wrap; gap:6px; border:1px solid #e1e9f1; border-radius:10px; background:#f9fbfd; padding:10px; min-width:0; font-size:12px; }
+  .rank-change-name { font-weight:800; color:#273f58; min-width:0; }
+  .rank-change-item .rank-move { margin-left:auto; font-size:13px; }
+  .rank-change-item .rank-arrow { font-size:15px; }
+  .rank-position { color:#708198; font-size:11px; width:100%; padding-left:16px; }
+  .rank-quiet { color:#718397; font-size:12px; padding:9px 0; }
+  .legend-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin:8px 0 11px; }
+  .legend-head h2 { margin:0; font-size:13px; color:#4d6076; font-weight:800; }
+  .legend-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+  .legend-chip { display:flex; align-items:center; gap:9px; min-width:0; min-height:44px; background:#fff; border:1px solid #dbe4ed; border-radius:10px; padding:10px 10px; text-align:left; transition:background .13s,border-color .13s; }
+  .legend-chip .swatch { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .legend-chip .name { font-size:12px; font-weight:730; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; flex:1; }
+  .legend-chip .score { font-size:12px; color:#334b64; font-weight:850; font-variant-numeric:tabular-nums; }
+  .legend-chip[aria-pressed="false"] { opacity:.45; background:#f4f6f8; }
+  .legend-chip[aria-pressed="false"] .name { text-decoration:line-through; }
+  .legend-tip { color:#7a8797; font-size:11px; margin:10px 0 4px; }
+  .below { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--gap); margin-top:var(--gap); min-width:0; }
+  .standings-wrap { overflow-x:auto; }
+  .standings-panel { margin-bottom:var(--gap); }
+  .payout-badge { color:#14724f; background:#e7f6ee; border:1px solid #ccebdc; border-radius:99px; font-size:11px; font-weight:800; white-space:nowrap; padding:8px 11px; }
+  .standings-panel .panel-top { margin-bottom:15px; }
+  .standings-table { min-width:850px; }
+  .standings-table th,.standings-table td { white-space:nowrap; }
+  .standings-table th:first-child,.standings-table td:first-child { position:sticky; left:0; z-index:2; width:48px; min-width:48px; background:#fff; }
+  .standings-table th:nth-child(2),.standings-table td:nth-child(2) { position:sticky; left:48px; z-index:2; min-width:135px; background:#fff; box-shadow:4px 0 8px -7px #61758b; }
+  .standings-table thead th:first-child,.standings-table thead th:nth-child(2) { z-index:3; background:#f1f6fb; }
+  .standings-table tbody tr.money-row td { background:#f2faf5; }
+  .standings-table .in-money { color:#117b63; font-weight:800; }
+  .standings-note { margin:11px 0 0; color:#61778b; font-size:11px; line-height:1.5; }
+  .section-subtitle { margin-bottom:14px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { color:#718197; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.11em; font-weight:800; padding:10px 12px; border-bottom:1px solid #e3ebf2; }
+  td { padding:9px 12px; border-bottom:1px solid #edf1f5; }
+  tbody tr:last-child td { border-bottom:0; }
+  td.numeric,th.numeric { text-align:right; font-variant-numeric:tabular-nums; }
+  .rank { color:#77879c; width:40px; }
+  .name-dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:8px; }
+  .positive { color:#117b63; font-weight:760; }
+  .negative { color:#ac5964; font-weight:760; }
+  .fineprint { font-size:11px; color:#8190a0; line-height:1.5; margin-top:15px; }
+  .fineprint a { color:#286cb4; }
+  @media(max-width:760px) {
+    :root { --gap:12px; --panel-pad:14px; }
+    .masthead { padding:28px 18px 25px; }
+    main { padding:12px 10px 26px; }
+    .overview { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+    .metric { padding:13px 14px; border-radius:13px; }
+    .daily-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .daily-card { padding:11px; }
+    .daily-main { font-size:19px; }
+    .panel { border-radius:14px; }
+    .panel-title,.section-title { font-size:18px; }
+    .panel-subtitle,.section-subtitle { font-size:12px; }
+    .panel-top { gap:12px; }
+    .controls { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); width:100%; gap:7px; }
+    .controls .range-btn,.controls .secondary-btn { width:100%; min-width:0; min-height:44px; text-align:center; font-size:11px; padding:8px 7px; }
+    .controls [data-days="all"] { grid-column:auto; }
+    .view-controls { align-items:stretch; gap:12px; }
+    .mode-group { width:100%; justify-content:space-between; }
+    .mode-btn { min-height:44px; }
+    .secondary-btn { min-height:44px; }
+    .dates-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%; gap:9px; }
+    .date-field { min-width:0; }
+    .date-field input { width:100%; height:44px; font-size:16px; }
+    .dates-form .secondary-btn { grid-column:1/-1; min-height:44px; }
+    #chart { height:clamp(370px,105vw,440px); }
+    .end-name { font-size:10px; line-height:13px; }
+    #rangeBars { height:420px; }
+    .legend-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+    .legend-chip { padding:9px 6px; gap:6px; }
+    .legend-chip .name,.legend-chip .score { font-size:11px; }
+    .legend-chip .swatch { width:8px; height:8px; }
+    .rank-change-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+    .rank-change-item { padding:9px 8px; }
+    .snapshot-pill { font-size:10px; }
+    th,td { padding:9px 8px; }
+  }
+  @media(max-width:400px) {
+    .controls .range-btn,.controls .secondary-btn { font-size:11px; }
+    .standings-wrap table { font-size:12px; }
+  }
+  @media(max-width:360px) {
+    .legend-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .metric { padding:12px; }
+  }
+.masthead .snapshot-links{display:none}
+#dailySubtitle:empty,#lineSubtitle:empty,#barSubtitle:empty,.legend-tip:empty{display:none}
+
+.masthead{
+  background:linear-gradient(90deg,rgba(4,24,38,.74) 0%,rgba(4,24,38,.40) 25%,transparent 47%),
+             url('assets/batspool-header.jpeg') center center / cover no-repeat;
+  min-height:225px;padding:24px 28px;display:flex;align-items:flex-start;
+}
+.masthead::after{display:none}
+.masthead .hero-row{width:100%;align-items:flex-start}
+.masthead h1{max-width:245px;font-size:clamp(1.55rem,3.2vw,2.55rem);line-height:1.07;
+  text-shadow:0 2px 12px rgba(0,12,22,.85);overflow-wrap:normal}
+@media(max-width:760px){
+  .masthead{min-height:220px;padding:17px 16px;background-position:center center}
+  .masthead h1{max-width:165px;font-size:clamp(1.35rem,5.2vw,1.75rem)}
+}
+.daily-money-person{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;align-items:initial}
+.daily-money-person .money-top{display:flex;align-items:center;gap:6px}
+.daily-money-person .money-bottom{display:flex;align-items:center;gap:6px;min-width:0;padding-left:13px}
+.daily-money-person .money-name{white-space:nowrap;min-width:0;font-size:12px}
+.daily-money-person .place{width:auto;min-width:35px;font-size:18px;font-weight:850}
+.daily-money-person .money-points{margin-left:auto}
+.daily-money-person .name-dot{flex-shrink:0}
+#dailyScoringNote:empty,#dailyRankNote:empty,#dailyMoneyNote:empty,#dailyFreshness:empty{display:none}
+
+
+.jump-nav{position:fixed;top:12px;right:12px;z-index:1100;opacity:1;transition:opacity .2s}
+.jump-nav.is-scrolled:not(.is-open):not(:hover):not(:focus-within){opacity:.62}
+.jump-nav.is-scrolled:not(.is-open) .jump-label{display:none}
+.jump-nav button{font:inherit;cursor:pointer}
+.jump-toggle{display:flex;align-items:center;gap:9px;background:#15364f;color:#fff;
+  border:1px solid #74b5c7;border-radius:11px;padding:9px 12px;box-shadow:0 3px 14px #071b2c55;
+  font-size:14px;font-weight:750}
+.jump-hamburger{display:grid;gap:4px}
+.jump-hamburger i{display:block;width:20px;height:2px;background:currentColor;border-radius:2px}
+.jump-panel{position:absolute;top:calc(100% + 8px);right:0;width:min(315px,calc(100vw - 24px));
+  max-height:min(75vh,590px);overflow-y:auto;border:1px solid #bed1df;border-radius:13px;
+  box-shadow:0 10px 34px #081f3766;background:#fff;color:#18334b;padding:11px}
+.jump-panel[hidden]{display:none}
+.jump-panel-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.jump-close{background:#eaf2f8;border:1px solid #d0dee9;border-radius:7px;padding:6px 9px;
+  color:#21435d;font-size:13px;font-weight:700}
+.jump-links{display:grid;gap:4px}
+.jump-links a{display:block;color:#183c58;text-decoration:none;border-radius:7px;padding:9px 10px;
+  font-size:14px;line-height:1.3}
+.jump-links a:hover,.jump-links a:focus-visible{background:#e8f3f7;outline-offset:2px}
+main .panel{scroll-margin-top:76px}
+.site-footer{max-width:1180px;margin:0 auto;padding:18px 20px 26px;border-top:1px solid #d6e1e9;
+  display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;
+  color:#50667b;font-size:14px}
+.site-footer a{color:#1b5d8e;font-weight:700}
+@media(max-width:600px){.jump-nav{top:10px;right:10px}.jump-toggle{padding:8px 10px}
+  .site-footer{padding:16px 13px 24px;font-size:13px}}
+
+</style>
+<script>
+__ECHARTS_LIB__
+</script>
+</head>
+<body>
+<header class="masthead">
+  <div class="inner hero-row">
+    <div>
+      <h1>BAT’S POOL 2027</h1>
+    </div>
+    <div class="snapshot-links">__POOL_SOURCE_LINK__<div class="snapshot-pill" id="snapshotPill">Historical snapshot · through Nov 14</div></div>
+  </div>
+</header>
+<main>
+<section class="panel daily-panel" aria-label="Latest daily scoring and standings update">
+    <div class="panel-top">
+      <div>
+        <h2 class="section-title">Daily update</h2>
+        <p class="panel-subtitle" id="dailySubtitle"></p>
+      </div>
+      <span class="daily-asof" id="dailyAsOf">Checking data date…</span>
+    </div>
+    <div class="daily-grid">
+      <div class="daily-card">
+        <h3 class="daily-label" id="dailyScoringLabel">Top daily scorer</h3>
+        <div class="daily-list" id="dailyScorers"></div>
+        <p class="daily-secondary" id="dailyScoringNote"></p>
+      </div>
+      <div class="daily-card">
+        <h3 class="daily-label" id="dailyRankLabel">Rank changes</h3>
+        <div class="daily-list" id="dailyMovers"></div>
+        <p class="daily-secondary" id="dailyRankNote"></p>
+      </div>
+      <div class="daily-card">
+        <h3 class="daily-label">Season completed</h3>
+        <div class="daily-main" id="dailySeasonPercent">—%</div>
+        <div class="daily-progress" role="progressbar" aria-label="NHL regular season calendar progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="dailyProgressBar"><div class="daily-progress-fill" id="dailyProgressFill"></div></div>
+        <p class="daily-secondary" id="dailySeasonNote">September 29 – April 10</p>
+      </div>
+      <div class="daily-card">
+        <h3 class="daily-label">In the money · top 3</h3>
+        <div class="daily-list" id="dailyMoney"></div>
+        <p class="daily-secondary" id="dailyMoneyNote"></p>
+      </div>
+    </div>
+    <p class="daily-note"><span id="dailyFreshness">Scoring and standings use the last imported day; season progress uses today's calendar date.</span>__POOL_FOOTER_LINK__</p>
+  </section>
+<!-- player-board-nightly -->
+<section class="panel" id="nightly-scores" aria-labelledby="nightly-scores-title">
+<style>
+#nightly-scores{margin:var(--gap,16px) 0;padding:clamp(14px,2vw,24px);min-width:0;color:#18334b}
+#nightly-scores h2{margin:0 0 5px}
+#nightly-scores .ns-intro{color:#49667a;margin:5px 0 16px;font-size:.9rem}
+#nightly-scores .ns-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr));gap:12px}
+#nightly-scores .ns-card{border:1px solid #d5e1e9;background:#f9fcfe;border-radius:12px;overflow:hidden;min-width:0}
+#nightly-scores .ns-card.ns-top{border:2px solid #0b8b83;background:#edfaf6;box-shadow:0 0 0 2px #c6eee5}
+#nightly-scores .ns-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 13px;border-bottom:1px solid #d5e1e9}
+#nightly-scores .ns-owner{display:flex;align-items:center;gap:7px;font-size:1rem;font-weight:750;min-width:0;overflow-wrap:anywhere}
+#nightly-scores .ns-points{white-space:nowrap;font-weight:800;color:#0d655e}
+#nightly-scores .ns-intro:empty{display:none}\n#nightly-scores .ns-owner .name-dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}\n#nightly-scores .ns-winner{display:block;font-size:.76rem;color:#087769;font-weight:750;margin-top:2px}
+#nightly-scores .ns-columns{display:grid;grid-template-columns:1fr 1fr;min-width:0}
+#nightly-scores .ns-col{min-width:0;padding:11px 10px 13px}
+#nightly-scores .ns-col+.ns-col{border-left:1px solid #d5e1e9}
+#nightly-scores .ns-col h3{font-size:.79rem;line-height:1.35;margin:0 0 9px;color:#456174}
+#nightly-scores ul{list-style:none;padding:0;margin:0;display:grid;gap:7px}
+#nightly-scores li{font-size:.86rem;line-height:1.35;overflow-wrap:anywhere}
+#nightly-scores .ns-entry{display:flex;justify-content:space-between;align-items:flex-start;gap:5px}
+#nightly-scores .ns-entry strong{white-space:nowrap;color:#087769}
+#nightly-scores .ns-injury{color:#a35c14;margin-left:3px;cursor:help}
+#nightly-scores .ns-empty{color:#718493;font-size:.83rem}
+#nightly-scores .ns-note{margin-top:13px;color:#526b7b;font-size:.8rem}
+@media(max-width:420px){#nightly-scores .ns-head{padding:10px}#nightly-scores .ns-col{padding:10px 7px}#nightly-scores li{font-size:.8rem}#nightly-scores .ns-col h3{font-size:.75rem}}
+</style>
+<h2 id="nightly-scores-title">Last night's scoresheet</h2>
+<p class="ns-intro" id="ns-date"></p>
+<div class="ns-grid" id="ns-grid" aria-live="polite"></div>
+<p class="ns-note">Only players recorded in an NHL boxscore are shown. 🩼 indicates a current injury listing, even if the player took part in the game.</p>
+</section>
+<!-- end-player-board-nightly -->
+  <section class="panel standings-panel" aria-label="Overall standings and prize race">
+    <div class="panel-top">
+      <div>
+        <h2 class="section-title">Standings &amp; prize race</h2>
+        <p class="panel-subtitle" id="standingsAsOf">November 14, 2026</p>
+      </div>
+      <span class="payout-badge">Top 3 paid</span>
+    </div>
+    <div class="standings-wrap">
+      <table class="standings-table">
+        <thead><tr>
+          <th>Rank</th><th>Contestant</th><th class="numeric">Points</th>
+          <th class="numeric">Points behind leader</th>
+          <th class="numeric">Points behind money</th>
+          <th class="numeric">vs. 4.5/day pace</th>
+        </tr></thead>
+        <tbody id="standings"></tbody>
+      </table>
+    </div>
+    <p class="standings-note">“Behind money” is the gap to third place (<span id="thirdPlaceName"></span>, <span id="moneyCutoff"></span> points).</p>
+  </section>
+  <section class="panel" aria-label="Interactive cumulative points chart">
+    <div class="panel-top">
+      <div>
+        <h2 class="panel-title" id="lineTitle">Cumulative fantasy points</h2>
+        <p class="panel-subtitle" id="lineSubtitle"></p>
+      </div>
+      <div class="controls" aria-label="Date range shortcuts">
+        <button type="button" class="range-btn" data-days="3" aria-pressed="true">3 days</button>
+        <button type="button" class="range-btn" data-days="7" aria-pressed="false">7 days</button>
+        <button type="button" class="range-btn" data-days="14" aria-pressed="false">14 days</button>
+        <button type="button" class="range-btn" data-days="30" aria-pressed="false">30 days</button>
+        <button type="button" class="range-btn" data-days="all" aria-pressed="false">Full season</button>
+        <button type="button" class="secondary-btn" id="reset">Reset</button>
+      </div>
+    </div>
+    <div class="view-controls">
+      <div class="mode-group">
+        <span class="control-caption">Y-axis</span>
+        <div class="mode-switch" role="group" aria-label="Graph units">
+          <button type="button" class="mode-btn" data-mode="points" aria-pressed="true">Points</button>
+          <button type="button" class="mode-btn" data-mode="rate" aria-pressed="false">Points/day</button>
+        </div>
+      </div>
+      <form class="dates-form" id="datesForm">
+        <label class="date-field" for="fromDate">From<input type="date" id="fromDate" required></label>
+        <label class="date-field" for="toDate">To<input type="date" id="toDate" required></label>
+        <button type="submit" class="secondary-btn">Apply dates</button>
+      </form>
+    </div>
+    <div class="date-error" id="dateError" role="status" aria-live="polite" hidden></div>
+    <p class="instructions">Drag the chart to move through dates; use the slider below to zoom. On a phone, use the slider handles and pinch gestures.</p>
+    <div class="y-title" id="yTitle">Total points (goals + assists)</div>
+    <div class="line-frame">
+      <div id="chart" role="img" aria-label="Interactive line chart of 11 fantasy hockey contestants' cumulative points through the latest recorded NHL day"></div>
+      <div id="endLabelLayer" class="end-label-layer" aria-hidden="true"><svg id="endLabelLinks" class="end-label-links"></svg></div>
+    </div>
+    <p class="benchmark-note"><span class="dash-key"></span><span id="benchmarkExplanation"><strong>Fixed benchmark:</strong> 4.5 points per calendar day, starting at zero on opening day. This is a reference pace.</span></p>
+    <div class="legend-head"><h2>Contestants <span id="selectionCount" style="font-weight:500;color:#8795a6">(11 of 11 shown · tap to hide/show)</span></h2><button type="button" class="secondary-btn" id="showAll">Show everyone</button></div>
+    <div class="legend-grid" id="legend"></div>
+    <p class="legend-tip">The vertical scale automatically adjusts to the visible dates and selected contestants.</p>
+  </section>
+  <section class="panel rank-panel" aria-label="Standings position changes across the selected dates">
+    <div class="panel-top">
+      <div>
+        <h2 class="section-title">Position changes</h2>
+        <p class="panel-subtitle">Net movement in the standings over the selected date range.</p>
+      </div>
+      <span class="rank-period" id="rankPeriod">Full selected period</span>
+    </div>
+    <div class="rank-change-grid" id="rankChanges" aria-live="polite"></div>
+    <p class="standings-note">Green ▲ indicates a rise toward first place; red ▼ indicates a drop. Rankings account for all 11 contestants.</p>
+  </section>
+  <section class="below">
+    <div class="panel" aria-label="Points earned in the selected date range">
+      <h2 class="section-title" id="barTitle">Points earned in this window</h2>
+      <p class="section-subtitle" id="barSubtitle">Points earned by the selected contestants during the visible dates.</p>
+      <div class="range-summary">
+        <div id="periodLabel" class="period-label" aria-live="polite">Sep 29 – Nov 14 · 47 days</div>
+        <div class="period-note"><span class="benchmark-tick"></span><span id="barBenchmark">Dashed line: 4.5/day pace</span></div>
+      </div>
+      <div id="rangeBars" role="img" aria-label="Horizontal bar chart of points earned by each contestant in the selected time period, ordered by current overall standings"></div>
+      <p class="legend-tip" id="barEmpty" hidden>Select a contestant above to display its points.</p>
+      <p class="legend-tip"></p>
+    </div>
+
+  <section class="panel" aria-label="Daily scoring puck grid">
+      <h2 class="section-title">Daily puck board</h2>
+      <p class="section-subtitle">One little puck per fantasy point earned that day.</p>
+      <div class="puck-window-caption" id="puckWindowLabel" aria-live="polite">Selected dates</div>
+      <div class="puck-scroll" tabindex="0" aria-label="Scroll horizontally to explore all selected date columns">
+        <table class="puck-table" id="puckTable"></table>
+      </div>
+      <p class="legend-tip">On a phone, scroll sideways to see earlier or later dates.</p>
+  </section>
+  </section>
+<!-- player-board-panel -->
+<section class="panel" id="player-board" aria-labelledby="player-board-title">
+<style>
+#player-board{margin:var(--gap,16px) 0;padding:clamp(14px,2vw,24px);min-width:0;color:#18334b}
+#player-board h2{margin:0 0 5px}#player-board p{margin:5px 0 12px;color:#49667a;font-size:.88rem}
+#player-board .pb-tools{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+#player-board label{display:grid;font-size:.74rem;font-weight:650;gap:3px}#player-board select,#player-board button{font:inherit;color:inherit}
+#player-board select,#player-board .pb-nav button{background:white;border:1px solid #c7d5df;border-radius:6px;min-height:36px;padding:4px 9px}
+#player-board table{border-collapse:collapse;width:100%;font-size:.86rem}#player-board td,#player-board th{padding:7px 5px;border-bottom:1px solid #e1e9ed;text-align:right}
+#player-board th{color:#426178}#player-board td:nth-child(2),#player-board th:nth-child(2){text-align:left}
+#player-board .pb-player{border:0;background:transparent;text-align:left;font-weight:700;padding:4px 0;cursor:pointer}
+#player-board small{display:block;color:#587080}#player-board .pb-detail td{text-align:left;background:#f2f7fa;line-height:1.6}
+#player-board .pb-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:10px}#player-board button:disabled{opacity:.45}
+#player-board .pb-dates:empty{display:none}
+#player-board th.pb-rank-head{white-space:pre-line;line-height:1.15;width:42px;min-width:42px;max-width:42px}
+#player-board td:first-child{width:42px;min-width:42px;max-width:42px;text-align:center;padding-inline:3px}
+#player-board .pb-selected{display:none}
+#player-board .pb-multi{position:relative;min-width:130px;flex:1 1 130px}
+#player-board .pb-multi summary{cursor:pointer;background:#fff;border:1px solid #c7d5df;border-radius:6px;min-height:36px;padding:8px 28px 8px 9px;list-style:none;position:relative;font-size:.82rem;font-weight:700}
+#player-board .pb-multi summary::-webkit-details-marker{display:none}
+#player-board .pb-multi summary:after{content:"⌄";position:absolute;right:10px;font-size:1rem}
+#player-board .pb-choices{position:absolute;z-index:30;top:calc(100% + 4px);left:0;min-width:100%;max-height:240px;overflow:auto;background:#fff;border:1px solid #c7d5df;border-radius:8px;padding:8px;box-shadow:0 8px 22px #16324826}
+#player-board .pb-choices label{display:flex;align-items:center;gap:7px;padding:5px;font-size:.82rem;white-space:nowrap;cursor:pointer}
+#player-board .pb-choices input{width:16px;height:16px;accent-color:#1476d4}
+#player-board .pb-logo{width:25px;height:25px;object-fit:contain;vertical-align:middle;flex-shrink:0}
+#player-board .pb-meta{display:flex;align-items:center;gap:5px;margin-top:3px}
+#player-board .pb-meta small{display:inline}
+#player-board .pb-owner{display:inline-flex;align-items:center;gap:5px}
+#player-board .pb-owner .name-dot,#nightly-scores .ns-owner .name-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+#player-board .pb-season-number{font-size:1.22rem;font-weight:850;text-align:center;color:#113f63}
+#player-board td.pb-season-cell,#player-board th.pb-season-head{text-align:center}
+#player-board .pb-point-pucks{display:grid;grid-template-columns:repeat(10,5px);justify-content:center;gap:2px;max-height:180px;overflow:auto}
+#player-board .pb-point-pucks span{width:5px;height:5px;border-radius:50%;background:#193349;box-shadow:inset 0 -1px #071522}
+#player-board .pb-view{display:flex;align-items:center;gap:7px;font-size:.82rem;margin:7px 0;font-weight:650}
+#player-board .pb-view input{accent-color:#1476d4}
+
+@media(max-width:760px){#player-board .pb-extra{display:none}#player-board .pb-selected{display:table-cell}#player-board .pb-tools>label{flex:1 1 27%}#player-board .pb-multi{flex:1 1 42%}#player-board select{width:100%;min-width:0}#player-board .pb-player{min-height:40px}}
+</style>
+<h2 id="player-board-title">Player leaderboard</h2>
+<p class="pb-dates"></p>
+<div class="pb-tools"></div>
+<label class="pb-view"><input id="pb-pucks-toggle" type="checkbox"> Show miniature pucks instead of season point numbers</label>
+<p class="pb-summary" aria-live="polite"></p>
+<table><thead></thead><tbody></tbody></table>
+<div class="pb-nav"><button type="button">Previous</button><span aria-live="polite"></span><button type="button">Next</button></div>
+<p>Tap a player for details. A dash means no games played during that scoring period. Tonight indicates the NHL team is scheduled. Injury designations are from ESPN.</p>
+</section>
+
+<!-- end-player-board-panel -->
+</main>
+<footer class="site-footer"><span>© Donnie McFarlane, 2026</span><a href="https://github.com/Donnie-McFarlane" target="_blank" rel="noopener noreferrer">GitHub</a></footer>
+<script>
+const POOL = __DATA_JSON__;
+const palette = ["#2181c7","#f16e62","#8464c7","#1f9b8b","#dc992f","#bf5da7","#6c9c4a","#5d7991","#c17b47","#23a5ba","#91663f"];
+const benchmarkName = "4.5 points/day benchmark";
+const people = POOL.contestants.slice().sort((a,b)=>b.actualPoints-a.actualPoints);
+const visibility = Object.fromEntries(people.map(c=>[c.name,true]));
+const colors = Object.fromEntries(people.map((c,i)=>[c.name,palette[i]]));
+// Competition ranking: tied scores share their rank (e.g. 1, 2, 2, 4).
+// Always rank all 11 contestants, independent of the visibility filter.
+const ranksByDay=POOL.history.map(record=>{
+  const scores=people.map(person=>({name:person.name,points:record[person.name]}))
+    .sort((a,b)=>b.points-a.points);
+  const ranks={};
+  scores.forEach((person,i)=>{
+    ranks[person.name]=i>0 && person.points===scores[i-1].points
+      ?ranks[scores[i-1].name]:i+1;
+  });
+  return ranks;
+});
+const parseDate = d => { const p=d.split("-").map(Number); return Date.UTC(p[0],p[1]-1,p[2],23,59,59); };
+const firstTime = Date.parse(POOL.start+"T00:00:00Z");
+const lastTime = parseDate(POOL.end);
+const fmtDate = x => new Intl.DateTimeFormat("en-CA",{month:"short",day:"numeric",timeZone:"UTC"}).format(new Date(x));
+const fmtDelta = x => (x>0?"+":"") + x.toFixed(1);
+const asUTCDate = date => Date.parse(date+"T12:00:00Z");
+const longDate = date => new Intl.DateTimeFormat("en-CA",{month:"long",day:"numeric",year:"numeric",timeZone:"UTC"}).format(new Date(asUTCDate(date)));
+const firstMonthDay = new Intl.DateTimeFormat("en-CA",{month:"long",day:"numeric",timeZone:"UTC"}).format(new Date(asUTCDate(POOL.start)));
+if(document.getElementById("headerDateRange"))document.getElementById("headerDateRange").textContent=firstMonthDay+" – "+longDate(POOL.end);
+document.getElementById("snapshotPill").textContent="NHL scores · through "+fmtDate(asUTCDate(POOL.end));
+if (document.getElementById("leaderAsOf")) document.getElementById("leaderAsOf").textContent="Through "+fmtDate(asUTCDate(POOL.end));
+document.getElementById("standingsAsOf").textContent=longDate(POOL.end)+"";
+document.getElementById("chart").setAttribute("aria-label","Interactive fantasy hockey cumulative points chart through "+longDate(POOL.end));
+let displayMode="points";
+const cumulativeLines=Object.fromEntries(people.map(c=>[
+  c.name, [[firstTime,0],...POOL.history.map(r=>[parseDate(r.date),r[c.name]])]
+]));
+const rateLines=Object.fromEntries(people.map(c=>[
+  c.name, [[firstTime,null],...POOL.history.map((r,i)=>[parseDate(r.date),r[c.name]/(i+1)])]
+]));
+const paceCumulative=[[firstTime,0],...POOL.history.map(r=>[parseDate(r.date),r["Median Pace"]])];
+const paceRate=[[firstTime,POOL.benchmarkPointsPerDay],...POOL.history.map(r=>[parseDate(r.date),POOL.benchmarkPointsPerDay])];
+const datasets = people.map((c,i)=>({
+  name:c.name, type:"line", smooth:false, showSymbol:false, symbol:"circle", symbolSize:5, connectNulls:false,
+  data:cumulativeLines[c.name],
+  lineStyle:{width:2.65,color:colors[c.name],opacity:.95}, itemStyle:{color:colors[c.name]},
+  emphasis:{focus:"series",lineStyle:{width:4.3}}, blur:{lineStyle:{opacity:.24}},
+  animation:false, z:4+i
+}));
+const baseline = {
+  name:benchmarkName, type:"line", showSymbol:false, smooth:false, animation:false, z:1,
+  data:paceCumulative,
+  lineStyle:{color:"#2c4057",width:2.9,type:"dashed",opacity:.82}, itemStyle:{color:"#2c4057"}
+};
+datasets.push(baseline);
+const chart = echarts.init(document.getElementById("chart"),null,{renderer:"svg"});
+const bars = echarts.init(document.getElementById("rangeBars"),null,{renderer:"svg"});
+const compactChart=()=>window.innerWidth<=760;
+const chartGutters=()=>window.innerWidth<=360?{left:39,right:70}:compactChart()?{left:45,right:76}:{left:56,right:108};
+const barGutters=()=>({top:17,left:compactChart()?65:73,right:compactChart()?42:49,bottom:30});
+const option = {
+  animation:false,
+  grid:{top:24,...chartGutters(),bottom:81,containLabel:false},
+  legend:{show:false,data:datasets.map(s=>s.name),selected:Object.fromEntries(datasets.map(s=>[s.name,true]))},
+  tooltip:{
+    trigger:"axis", confine:true, enterable:false, appendToBody:false,
+    backgroundColor:"rgba(255,255,255,.97)", borderColor:"#dbe6ef", borderWidth:1,
+    textStyle:{color:"#1a3048",fontSize:11},
+    extraCssText:"box-shadow:0 8px 26px rgba(10,35,65,.16);border-radius:11px;max-height:330px;overflow:auto;",
+    axisPointer:{type:"line",lineStyle:{color:"#8e9eae",type:"dashed"}},
+    formatter:function(items) {
+      if(!items || !items.length) return "";
+      const day=fmtDate(items[0].axisValue);
+      const entries=items.filter(item=>visibility[item.seriesName]!==false)
+        .map(item=>({name:item.seriesName,value:item.data && item.data[1],color:item.color}))
+        .filter(x=>Number.isFinite(x.value)).sort((a,b)=>b.value-a.value);
+      return '<div style="font-weight:800;font-size:12px;margin-bottom:7px">'+day+
+        '<span style="font-weight:500;font-size:10px;color:#63768b"> · '+(displayMode==="rate"?"season-to-date pts/day":"total points")+'</span></div>'+
+        entries.map(e=>'<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin:4px 0">'+
+          '<span style="display:flex;gap:6px;align-items:center"><i style="background:'+e.color+';width:8px;height:8px;border-radius:50%;display:inline-block"></i>'+
+          e.name.replace(/&/g,"&amp;").replace(/</g,"&lt;")+'</span><b>'+(displayMode==="rate"?e.value.toFixed(2):e.value.toFixed(0))+'</b></div>').join("");
+    }
+  },
+  xAxis:{
+    type:"time",min:firstTime,max:lastTime,boundaryGap:false,
+    axisLine:{lineStyle:{color:"#9fafc0"}},axisTick:{show:false},splitLine:{show:false},
+    axisLabel:{color:"#72839a",fontSize:11,hideOverlap:true,formatter:fmtDate}
+  },
+  yAxis:{
+    type:"value",min:0,max:260,scale:true,
+    axisLine:{show:false},axisTick:{show:false},
+    axisLabel:{color:"#667b92",fontSize:11},
+    splitLine:{show:true,lineStyle:{color:"#e7edf4",width:1}}
+  },
+  dataZoom:[
+    {type:"inside",xAxisIndex:0,filterMode:"none",start:Math.max(0,100*(lastTime-firstTime-2*86400000)/(lastTime-firstTime)),end:100,zoomOnMouseWheel:true,moveOnMouseMove:true,moveOnMouseWheel:false,preventDefaultMouseMove:false},
+    {type:"slider",xAxisIndex:0,filterMode:"none",start:Math.max(0,100*(lastTime-firstTime-2*86400000)/(lastTime-firstTime)),end:100,height:24,bottom:13,
+      borderColor:"#dde7f1",backgroundColor:"#f6f9fc",fillerColor:"rgba(42,127,195,.13)",
+      handleStyle:{color:"#2a83c2",borderColor:"#fff"},handleSize:17,
+      textStyle:{color:"#647b94",fontSize:10},brushSelect:false,showDataShadow:false}
+  ],
+  series:datasets
+};
+chart.setOption(option);
+bars.setOption({
+  animation:false,
+  grid:barGutters(),
+  tooltip:{trigger:"item",confine:true,formatter:p=>p.name+": <b>"+p.data.earnedPoints+" points</b> in "+p.data.days+" day(s) · "+(p.data.earnedPoints/p.data.days).toFixed(2)+" pts/day"},
+  xAxis:{type:"value",min:0,max:260,axisLabel:{color:"#72839a",fontSize:10},axisLine:{show:false},axisTick:{show:false},splitLine:{show:true,lineStyle:{color:"#e7edf4"}}},
+  yAxis:{type:"category",data:people.map(p=>p.name),inverse:true,axisLabel:{color:"#34516d",fontSize:12,fontWeight:650},axisLine:{show:false},axisTick:{show:false}},
+  series:[{type:"bar",barMaxWidth:20,barCategoryGap:"32%",itemStyle:{borderRadius:[0,4,4,0]},label:{show:true,position:"right",distance:5,color:"#233d59",fontSize:11,fontWeight:750,formatter:p=>displayMode==="rate"?p.value.toFixed(2):String(p.value)},data:[]}]
+});
+const legendEl=document.getElementById("legend");
+const standingsEl=document.getElementById("standings");
+const standingsRows={};
+const leaderTotal=people[0].actualPoints;
+const thirdPlaceTotal=people[2].actualPoints;
+const currentRanks=ranksByDay[ranksByDay.length-1];
+const currentRankSizes={};
+people.forEach(p=>{currentRankSizes[currentRanks[p.name]]=(currentRankSizes[currentRanks[p.name]]||0)+1;});
+const rankLabel=name=>(currentRankSizes[currentRanks[name]]>1?"T-":"")+currentRanks[name];
+people.forEach((person,index)=>{
+  const btn=document.createElement("button");
+  btn.className="legend-chip";btn.type="button";btn.setAttribute("aria-pressed","true");
+  btn.innerHTML='<span class="swatch" style="background:'+colors[person.name]+'"></span><span class="name"></span><span class="score">'+person.actualPoints+'</span>';
+  btn.querySelector(".name").textContent=person.name;
+  btn.addEventListener("click",()=>{visibility[person.name]=!visibility[person.name];btn.setAttribute("aria-pressed",String(visibility[person.name]));updateSeries();});
+  legendEl.appendChild(btn);
+  const delta=person.actualPoints-POOL.benchmarkPointsPerDay*POOL.days;
+  const behindLeader=Math.max(0,leaderTotal-person.actualPoints);
+  const behindMoney=Math.max(0,thirdPlaceTotal-person.actualPoints);
+  const tr=document.createElement("tr");
+  tr.className=behindMoney===0?"money-row":"";
+  tr.innerHTML='<td class="rank">'+rankLabel(person.name)+'</td>'+
+    '<td><span class="name-dot" style="background:'+colors[person.name]+'"></span></td>'+
+    '<td class="numeric"><strong>'+person.actualPoints+'</strong></td>'+
+    '<td class="numeric">'+behindLeader+'</td>'+
+    '<td class="numeric '+(behindMoney===0?"in-money":"")+'">'+behindMoney+'</td>'+
+    '<td class="numeric '+(delta>=0?"positive":"negative")+'">'+fmtDelta(delta)+'</td>';
+  tr.children[1].appendChild(document.createTextNode(person.name));
+  standingsEl.appendChild(tr);
+  standingsRows[person.name]=tr;
+});
+if (document.getElementById("leaderName")) document.getElementById("leaderName").textContent=people[0].name;
+if (document.getElementById("leaderPts")) document.getElementById("leaderPts").textContent=people[0].actualPoints;
+if (document.getElementById("leaderMargin")) document.getElementById("leaderMargin").textContent=(people[0].actualPoints-people[1].actualPoints)+" pts";
+if (document.getElementById("medianPoints")) document.getElementById("medianPoints").textContent=POOL.medianPoints+" pts";
+document.getElementById("thirdPlaceName").textContent=people.filter(p=>p.actualPoints===thirdPlaceTotal).map(p=>p.name).join(" / ");
+document.getElementById("moneyCutoff").textContent=thirdPlaceTotal;
+let currentRange=[firstTime,lastTime];
+let zoomJob=null;
+const oneDay=86400000;
+const shortDate=d=>new Intl.DateTimeFormat("en-CA",{month:"short",day:"numeric",timeZone:"UTC"}).format(new Date(d+12*3600000));
+const labelLayer=document.getElementById("endLabelLayer");
+const labelSvg=document.getElementById("endLabelLinks");
+const labelText=Object.fromEntries(people.map(person=>{
+  const element=document.createElement("span");
+  element.className="end-name";
+  element.style.color=colors[person.name];
+  element.textContent=person.name;
+  labelLayer.appendChild(element);
+  return [person.name,element];
+}));
+function positionLineNames(){
+  const width=chart.getWidth(),height=chart.getHeight();
+  if(width<=0||height<=0)return;
+  labelSvg.setAttribute("viewBox","0 0 "+width+" "+height);
+  labelSvg.replaceChildren();
+  const entries=[];
+  for(const series of datasets){
+    const el=labelText[series.name];
+    if(!el)continue;
+    el.style.display="none";
+    if(!visibility[series.name])continue;
+    const value=interpolateAt(series.data,currentRange[1]);
+    if(!Number.isFinite(value))continue;
+    const coords=chart.convertToPixel({xAxisIndex:0,yAxisIndex:0},[currentRange[1],value]);
+    if(!coords||!Number.isFinite(coords[0])||!Number.isFinite(coords[1]))continue;
+    entries.push({name:series.name,x:coords[0],y:coords[1]});
+  }
+  entries.sort((a,b)=>a.y-b.y);
+  const gap=compactChart()?15:18;
+  const top=32,bottom=height-92;
+  for(let i=0;i<entries.length;i++){
+    const previous=i?entries[i-1].labelY+gap:top;
+    entries[i].labelY=Math.max(top,previous,entries[i].y);
+  }
+  if(entries.length&&entries[entries.length-1].labelY>bottom){
+    entries[entries.length-1].labelY=bottom;
+    for(let i=entries.length-2;i>=0;i--)entries[i].labelY=Math.min(entries[i].labelY,entries[i+1].labelY-gap);
+  }
+  for(const e of entries){
+    const el=labelText[e.name];
+    const x=Math.min(width-63,e.x+(compactChart()?10:13));
+    el.style.left=x+"px";
+    el.style.top=e.labelY+"px";
+    el.style.display="block";
+    const connector=document.createElementNS("http://www.w3.org/2000/svg","path");
+    connector.setAttribute("d","M "+e.x+" "+e.y+" L "+(x-3)+" "+e.labelY);
+    connector.setAttribute("fill","none");
+    connector.setAttribute("stroke",colors[e.name]);
+    connector.setAttribute("stroke-width","1.3");
+    connector.setAttribute("opacity",".82");
+    labelSvg.appendChild(connector);
+  }
+}
+const fromField=document.getElementById("fromDate");
+const toField=document.getElementById("toDate");
+for(const field of [fromField,toField]){field.min=POOL.start;field.max=POOL.end;}
+fromField.value=POOL.start;
+toField.value=POOL.end;
+function visibleDayIndices(){
+  const begin=Math.max(0,Math.min(POOL.history.length-1,Math.floor((currentRange[0]-firstTime+1000)/oneDay)));
+  const finish=Math.max(begin,Math.min(POOL.history.length-1,Math.floor((currentRange[1]-firstTime)/oneDay)));
+  return [begin,finish];
+}
+const puckTable=document.getElementById("puckTable");
+let lastPuckRenderKey="";
+function renderPuckBoard(start,end){
+  const active=people.filter(person=>visibility[person.name]);
+  const days=end-start+1;
+  const key=start+"|"+end+"|"+active.map(person=>person.name).join("|");
+  if(key===lastPuckRenderKey)return;
+  lastPuckRenderKey=key;
+  // Fixed-width columns: a wider date range scrolls, never squeezes the pucks.
+  puckTable.style.width=(128+94*days)+"px";
+  document.getElementById("puckWindowLabel").textContent=
+    shortDate(Date.parse(POOL.history[start].date+"T00:00:00Z"))+" – "+
+    shortDate(Date.parse(POOL.history[end].date+"T00:00:00Z"))+" · "+
+    days+(days===1?" day":" days")+" · "+active.length+" contestants shown";
+  const thead=document.createElement("thead"),header=document.createElement("tr");
+  const personHeader=document.createElement("th");
+  personHeader.textContent="Contestant";
+  personHeader.scope="col";
+  header.appendChild(personHeader);
+  const weekFmt=new Intl.DateTimeFormat("en-CA",{weekday:"short",timeZone:"UTC"});
+  for(let day=start;day<=end;day++){
+    const th=document.createElement("th");
+    th.scope="col";
+    const date=new Date(POOL.history[day].date+"T12:00:00Z");
+    const weekday=document.createElement("span");
+    weekday.className="date-weekday";
+    weekday.textContent=weekFmt.format(date);
+    const dateText=document.createElement("span");
+    dateText.textContent=fmtDate(date.getTime());
+    th.appendChild(weekday);
+    th.appendChild(dateText);
+    header.appendChild(th);
+  }
+  thead.appendChild(header);
+  const tbody=document.createElement("tbody");
+  for(const person of active){
+    const tr=document.createElement("tr");
+    const th=document.createElement("th");
+    th.scope="row";
+    const dot=document.createElement("span");
+    dot.className="name-dot";
+    dot.style.background=colors[person.name];
+    th.appendChild(dot);
+    th.appendChild(document.createTextNode(person.name));
+    tr.appendChild(th);
+    for(let day=start;day<=end;day++){
+      const record=POOL.history[day];
+      const previous=day?POOL.history[day-1][person.name]:0;
+      const points=record[person.name]-previous;
+      const td=document.createElement("td");
+      td.className=points===0?"zero":"";
+      const rankShift=day>0?ranksByDay[day-1][person.name]-ranksByDay[day][person.name]:0;
+      const rankDescription=rankShift>0?", rose "+rankShift+" rank"+(rankShift===1?"":"s")
+        :rankShift<0?", fell "+(-rankShift)+" rank"+(rankShift===-1?"":"s"): ", rank unchanged";
+      td.setAttribute("aria-label",person.name+" scored "+points+" point"+(points===1?"":"s")+" on "+record.date+rankDescription);
+      const heading=document.createElement("div");
+      heading.className="day-heading";
+      const count=document.createElement("span");
+      count.className="day-count";
+      count.textContent=String(points);
+      heading.appendChild(count);
+      if(rankShift!==0){
+        const move=document.createElement("span");
+        move.className="rank-move "+(rankShift>0?"rank-up":"rank-down");
+        move.title=(rankShift>0?"Up ":"Down ")+Math.abs(rankShift)+" ranking place"+(Math.abs(rankShift)===1?"":"s");
+        move.setAttribute("aria-hidden","true");
+        const arrow=document.createElement("span");
+        arrow.className="rank-arrow";
+        arrow.textContent=rankShift>0?"▲":"▼";
+        move.appendChild(arrow);
+        if(Math.abs(rankShift)>1){
+          const magnitude=document.createElement("span");
+          magnitude.textContent=String(Math.abs(rankShift));
+          move.appendChild(magnitude);
+        }
+        heading.appendChild(move);
+      }
+      const pucks=document.createElement("div");
+      pucks.className="puck-stack";
+      pucks.setAttribute("aria-hidden","true");
+      for(let n=0;n<points;n++){
+        const puck=document.createElement("span");
+        puck.className="tiny-puck";
+        pucks.appendChild(puck);
+      }
+      td.appendChild(heading);
+      td.appendChild(pucks);
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  if(!active.length){
+    const empty=document.createElement("tr"),cell=document.createElement("td");
+    cell.colSpan=days+1;
+    cell.textContent="No contestants selected. Tap a name above to display its scores.";
+    cell.style.padding="24px 14px";
+    empty.appendChild(cell);
+    tbody.appendChild(empty);
+  }
+  puckTable.replaceChildren(thead,tbody);
+  // Start at the most recent date in each selected window.
+  const puckScroller=puckTable.closest(".puck-scroll");
+  if(puckScroller)requestAnimationFrame(()=>{puckScroller.scrollLeft=puckScroller.scrollWidth;});
+}
+const rankChangesEl=document.getElementById("rankChanges");
+let lastRankRenderKey="";
+function renderRankChanges(begin,finish){
+  const active=people.filter(person=>visibility[person.name]);
+  const key=begin+"|"+finish+"|"+active.map(person=>person.name).join("|");
+  if(key===lastRankRenderKey)return;
+  lastRankRenderKey=key;
+  const prior=begin>0?begin-1:0;
+  const startRanks=ranksByDay[prior],endRanks=ranksByDay[finish];
+  document.getElementById("rankPeriod").textContent=
+    shortDate(Date.parse(POOL.history[begin].date+"T00:00:00Z"))+" – "+
+    shortDate(Date.parse(POOL.history[finish].date+"T00:00:00Z"));
+  const items=[];
+  for(const person of active){
+    const movement=startRanks[person.name]-endRanks[person.name];
+    if(movement===0)continue;
+    const item=document.createElement("div");
+    item.className="rank-change-item";
+    const dot=document.createElement("span");
+    dot.className="name-dot";
+    dot.style.background=colors[person.name];
+    dot.style.marginRight="0";
+    const name=document.createElement("span");
+    name.className="rank-change-name";
+    name.textContent=person.name;
+    const direction=document.createElement("span");
+    direction.className="rank-move "+(movement>0?"rank-up":"rank-down");
+    direction.textContent=(movement>0?"▲ ":"▼ ")+Math.abs(movement);
+    const positions=document.createElement("span");
+    positions.className="rank-position";
+    positions.textContent="#"+startRanks[person.name]+" → #"+endRanks[person.name];
+    item.append(dot,name,direction,positions);
+    items.push(item);
+  }
+  if(!items.length){
+    const empty=document.createElement("p");
+    empty.className="rank-quiet";
+    empty.textContent=active.length?"No overall rank changes for the selected contestants in this period.":"Select a contestant above to see position changes.";
+    items.push(empty);
+  }
+  rankChangesEl.replaceChildren(...items);
+}
+function updateRangeBars(){
+  // A selected date contributes every NHL point awarded on that calendar date.
+  const [begin,finish]=visibleDayIndices();
+  const count=finish-begin+1;
+  const atEnd=POOL.history[finish];
+  const before=begin===0?null:POOL.history[begin-1];
+  const active=people.filter(person=>visibility[person.name]);
+  const values=active.map(person=>({
+    name:person.name,
+    earnedPoints:atEnd[person.name]-(before?before[person.name]:0),days:count,
+    value:displayMode==="rate"?(atEnd[person.name]-(before?before[person.name]:0))/count:atEnd[person.name]-(before?before[person.name]:0),
+    itemStyle:{color:colors[person.name]}
+  }));
+  const pace=POOL.benchmarkPointsPerDay*(displayMode==="rate"?1:count);
+  const highest=Math.max(pace,...values.map(v=>v.value));
+  document.getElementById("periodLabel").textContent=shortDate(Date.parse(POOL.history[begin].date+"T00:00:00Z"))+" – "+shortDate(Date.parse(atEnd.date+"T00:00:00Z"))+" · "+count+(count===1?" day":" days");
+  document.getElementById("barBenchmark").textContent=displayMode==="rate"?"4.5 points/day reference":"4.5/day pace: "+pace.toFixed(1)+" pts";
+  fromField.value=POOL.history[begin].date;
+  toField.value=atEnd.date;
+  const tick=displayMode==="rate"?0.5:5;
+  document.getElementById("barEmpty").hidden=active.length>0;
+  const barsElement=document.getElementById("rangeBars");
+  const desiredHeight=Math.max(170,Math.min(425,100+29.5*active.length));
+  if(barsElement.style.height!==desiredHeight+"px"){
+    barsElement.style.height=desiredHeight+"px";
+    bars.resize();
+  }
+  bars.setOption({
+    yAxis:{data:active.map(person=>person.name)},
+    xAxis:{max:Math.max(tick,Math.ceil(highest*1.15/tick)*tick),axisLabel:{formatter:v=>displayMode==="rate"?Number(v).toFixed(1):String(v)}},
+    series:[{data:values,markLine:{silent:true,symbol:"none",label:{show:false},lineStyle:{color:"#2c4057",type:"dashed",width:2,opacity:.86},data:[{xAxis:pace}]}}]
+  });
+}
+function currentZoomBounds(){
+  const p=chart.getOption().dataZoom[0];
+  const a=Number.isFinite(Number(p.start)) ? Number(p.start) : 0;
+  const b=Number.isFinite(Number(p.end)) ? Number(p.end) : 100;
+  return [firstTime+(lastTime-firstTime)*a/100,firstTime+(lastTime-firstTime)*b/100];
+}
+function interpolateAt(data,x) {
+  if(x<=data[0][0])return data[0][1];
+  if(x>=data[data.length-1][0])return data[data.length-1][1];
+  for(let i=1;i<data.length;i++){
+    if(x<=data[i][0]){
+      const left=data[i-1],right=data[i];
+      if(!Number.isFinite(left[1])||!Number.isFinite(right[1]))return NaN;
+      return left[1]+(x-left[0])*(right[1]-left[1])/(right[0]-left[0]);
+    }
+  }
+  return data[data.length-1][1];
+}
+function fitYAxis(){
+  currentRange=currentZoomBounds();
+  updateRangeBars();
+  const [visibleStart,visibleEnd]=visibleDayIndices();
+  renderPuckBoard(visibleStart,visibleEnd);
+  renderRankChanges(visibleStart,visibleEnd);
+  const selected=datasets.filter(s=>s.name===benchmarkName||visibility[s.name]);
+  let min=Infinity,max=-Infinity;
+  for(const s of selected){
+    const values=[interpolateAt(s.data,currentRange[0]),interpolateAt(s.data,currentRange[1])];
+    for(const [x,y] of s.data)if(x>=currentRange[0] && x<=currentRange[1])values.push(y);
+    for(const y of values)if(Number.isFinite(y)){min=Math.min(min,y);max=Math.max(max,y);}
+  }
+  if(!Number.isFinite(min)||!Number.isFinite(max))return;
+  const spread=Math.max(displayMode==="rate"?.01:1,max-min);
+  const margin=displayMode==="rate"?Math.max(.16,spread*.09):Math.max(2.5,spread*.09);
+  const isFull=(currentRange[1]-currentRange[0])>=.98*(lastTime-firstTime);
+  const step=displayMode==="rate"?.25:2;
+  const yMin=isFull?0:Math.max(0,Math.floor((min-margin)/step)*step);
+  const yMax=Math.ceil((max+margin)/step)*step;
+  chart.setOption({yAxis:{min:yMin,max:Math.max(yMax,yMin+(displayMode==="rate"?.5:5))}},{lazyUpdate:false});
+  requestAnimationFrame(positionLineNames);
+  for(const button of document.querySelectorAll(".range-btn")){
+    const days=button.dataset.days;
+    const expectedStart=days==="all"?firstTime:Math.max(firstTime,lastTime-Number(days)*oneDay+1000);
+    const matches=Math.abs(currentRange[0]-expectedStart)<8640000 && Math.abs(currentRange[1]-lastTime)<8640000;
+    button.setAttribute("aria-pressed",String(matches));
+  }
+}
+function scheduleFit(){
+  if(zoomJob!==null)cancelAnimationFrame(zoomJob);
+  zoomJob=requestAnimationFrame(()=>{zoomJob=null;fitYAxis();});
+}
+chart.on("datazoom",scheduleFit);
+function updateSeries(){
+  document.dispatchEvent(new Event("pool-visibility"));
+  const selected={};
+  for(const c of people)selected[c.name]=visibility[c.name];
+  selected[benchmarkName]=true;
+  const count=people.filter(c=>visibility[c.name]).length;
+  document.getElementById("selectionCount").textContent="("+count+" of "+people.length+" shown · tap to hide/show)";
+  for(const person of people)standingsRows[person.name].hidden=!visibility[person.name];
+  chart.setOption({legend:{selected}},{lazyUpdate:false});
+  fitYAxis();
+}
+function setDisplayMode(mode){
+  if(mode!=="points"&&mode!=="rate")return;
+  displayMode=mode;
+  for(const series of datasets){
+    if(series.name===benchmarkName)series.data=mode==="rate"?paceRate:paceCumulative;
+    else series.data=mode==="rate"?rateLines[series.name]:cumulativeLines[series.name];
+  }
+  chart.setOption({
+    series:datasets.map(s=>({name:s.name,data:s.data})),
+    yAxis:{axisLabel:{formatter:v=>mode==="rate"?Number(v).toFixed(2):String(v)}}
+  });
+  document.querySelectorAll(".mode-btn").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.mode===mode)));
+  document.getElementById("lineTitle").textContent=mode==="rate"?"Season-to-date scoring pace":"Cumulative fantasy points";
+  document.getElementById("lineSubtitle").textContent="";
+  document.getElementById("yTitle").textContent=mode==="rate"?"Average points per calendar day since opening day":"Total points (goals + assists)";
+  document.getElementById("benchmarkExplanation").innerHTML=mode==="rate"
+    ?"<strong>Fixed benchmark:</strong> 4.5 points/day (a horizontal dashed line). Contestant values are their season-to-date averages, not daily game-by-game totals."
+    :"<strong>Fixed benchmark:</strong> 4.5 points per calendar day, starting at zero on opening day. This is a reference pace.";
+  document.getElementById("barTitle").textContent=mode==="rate"?"Average points/day in this window":"Points earned in this window";
+  document.getElementById("barSubtitle").textContent=mode==="rate"
+    ?""
+    :"Points earned by the selected contestants during the visible dates.";
+  fitYAxis();
+}
+document.querySelectorAll(".mode-btn").forEach(button=>button.addEventListener("click",()=>setDisplayMode(button.dataset.mode)));
+function setDateWindow(from,to){
+  const lower=Date.parse(from+"T00:00:00Z");
+  const upper=parseDate(to);
+  chart.dispatchAction({
+    type:"dataZoom",
+    start:Math.max(0,100*(lower-firstTime)/(lastTime-firstTime)),
+    end:Math.min(100,100*(upper-firstTime)/(lastTime-firstTime))
+  });
+  requestAnimationFrame(fitYAxis);
+}
+function setDateRange(days){
+  const lower=days==="all"?firstTime:Math.max(firstTime,lastTime-Number(days)*oneDay+1000);
+  const from=new Date(lower).toISOString().slice(0,10);
+  setDateWindow(from,POOL.end);
+  document.querySelectorAll(".range-btn").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.days===String(days))));
+}
+document.getElementById("datesForm").addEventListener("submit",event=>{
+  event.preventDefault();
+  const from=fromField.value,to=toField.value;
+  const error=document.getElementById("dateError");
+  if(!from||!to||from<POOL.start||to>POOL.end||from>to){
+    error.textContent="Select a valid From and To date between "+POOL.start+" and "+POOL.end+".";
+    error.hidden=false;
+    return;
+  }
+  error.textContent="";
+  error.hidden=true;
+  setDateWindow(from,to);
+});
+document.querySelectorAll(".range-btn").forEach(btn=>btn.addEventListener("click",()=>setDateRange(btn.dataset.days)));
+document.getElementById("reset").addEventListener("click",()=>setDateRange("3"));
+document.getElementById("showAll").addEventListener("click",()=>{
+  for(const name of Object.keys(visibility))visibility[name]=true;
+  for(const btn of legendEl.querySelectorAll("button"))btn.setAttribute("aria-pressed","true");
+  updateSeries();
+});
+window.addEventListener("resize",()=>{
+  chart.setOption({grid:chartGutters()});
+  bars.setOption({grid:barGutters()});
+  chart.resize();bars.resize();scheduleFit();
+});
+function renderDailyUpdate(){
+  const latestIndex=POOL.history.length-1;
+  const latest=POOL.history[latestIndex];
+  const previous=latestIndex>0?POOL.history[latestIndex-1]:null;
+  const latestLabel=fmtDate(Date.parse(latest.date+"T12:00:00Z"));
+  const todayParts=Object.fromEntries(new Intl.DateTimeFormat("en-US",{
+    timeZone:"America/Toronto",year:"numeric",month:"2-digit",day:"2-digit"
+  }).formatToParts(POOL.demo ? new Date(POOL.playerBoard.today+"T18:00:00Z") : new Date()).filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));
+  const todayISO=todayParts.year+"-"+todayParts.month+"-"+todayParts.day;
+  const yesterdayISO=new Date(Date.parse(todayISO+"T00:00:00Z")-86400000).toISOString().slice(0,10);
+  const isYesterday=latest.date===yesterdayISO;
+  const stale=latest.date<yesterdayISO;
+  document.getElementById("dailySubtitle").textContent="";
+  const status=document.getElementById("dailyAsOf");
+  status.textContent=POOL.demo ? "Demo snapshot · through "+latestLabel : (isYesterday?"Yesterday · ":"Data through ")+latestLabel;
+  status.classList.toggle("stale",stale);
+  document.getElementById("dailyScoringLabel").textContent=(isYesterday?"Yesterday's":"Latest")+" top scorer"+(isYesterday?"":" · "+latestLabel);
+  const dailyScores=people.map(person=>({
+    name:person.name,points:latest[person.name]-(previous?previous[person.name]:0)
+  }));
+  const high=Math.max(...dailyScores.map(p=>p.points));
+  const scorerList=document.getElementById("dailyScorers");
+  scorerList.replaceChildren();
+  if(high===0){
+    const empty=document.createElement("div");
+    empty.className="daily-main";
+    empty.textContent="No points scored";
+    scorerList.appendChild(empty);
+  }else{
+    for(const scorer of dailyScores.filter(p=>p.points===high)){
+      const person=document.createElement("div");
+      person.className="daily-person";
+      const dot=document.createElement("span");
+      dot.className="name-dot";
+      dot.style.background=colors[scorer.name];
+      const name=document.createElement("span");
+      name.textContent=scorer.name;
+      const score=document.createElement("strong");
+      score.style.color="#176fc0";
+      score.textContent=scorer.points+" pts";
+      person.append(dot,name,score);
+      scorerList.appendChild(person);
+    }
+  }
+  document.getElementById("dailyScoringNote").textContent="";
+  const movers=document.getElementById("dailyMovers");
+  movers.replaceChildren();
+  const dailyShifts=latestIndex>0?people.map(person=>({
+    name:person.name,change:ranksByDay[latestIndex-1][person.name]-ranksByDay[latestIndex][person.name]
+  })).filter(p=>p.change!==0):[];
+  const showMoves=(entries)=>{
+    for(const entry of entries){
+      const row=document.createElement("div");
+      row.className="daily-person";
+      const dot=document.createElement("span");
+      dot.className="name-dot";
+      dot.style.background=colors[entry.name];
+      const name=document.createElement("span");
+      name.textContent=entry.name;
+      const move=document.createElement("span");
+      move.className="rank-move "+(entry.change>0?"rank-up":"rank-down");
+      move.textContent=(entry.change>0?"▲ ":"▼ ")+Math.abs(entry.change);
+      row.append(dot,name,move);
+      movers.appendChild(row);
+    }
+  };
+  if(dailyShifts.length){
+    document.getElementById("dailyRankLabel").textContent="Rank moves · "+latestLabel;
+    showMoves(dailyShifts);
+    document.getElementById("dailyRankNote").textContent="";
+  }else{
+    let priorClimbers=null,priorDay=null;
+    for(let d=latestIndex-1;d>=1;d--){
+      const found=people.map(person=>({
+        name:person.name,change:ranksByDay[d-1][person.name]-ranksByDay[d][person.name]
+      })).filter(p=>p.change>0);
+      if(found.length){priorClimbers=found;priorDay=POOL.history[d].date;break;}
+    }
+    document.getElementById("dailyRankLabel").textContent="Last rank climbers";
+    if(priorClimbers){
+      showMoves(priorClimbers);
+      document.getElementById("dailyRankNote").textContent="No ranks changed on "+latestLabel+". Last climb: "+fmtDate(Date.parse(priorDay+"T12:00:00Z"))+".";
+    }else{
+      const empty=document.createElement("div");
+      empty.className="daily-secondary";
+      empty.textContent="No rank increases recorded so far.";
+      movers.appendChild(empty);
+      document.getElementById("dailyRankNote").textContent="No ranks changed on "+latestLabel+".";
+    }
+  }
+  const seasonEnd="2027-04-10";
+  const dayNumber=(iso)=>Math.floor(Date.parse(iso+"T00:00:00Z")/86400000);
+  const totalDays=dayNumber(seasonEnd)-dayNumber(POOL.start)+1;
+  const daysElapsed=Math.max(0,Math.min(totalDays,dayNumber(todayISO)-dayNumber(POOL.start)+1));
+  const progress=100*daysElapsed/totalDays;
+  document.getElementById("dailySeasonPercent").textContent=progress.toFixed(1)+"%";
+  document.getElementById("dailyProgressFill").style.width=progress+"%";
+  document.getElementById("dailyProgressBar").setAttribute("aria-valuenow",progress.toFixed(1));
+  document.getElementById("dailySeasonNote").textContent=daysElapsed+" of "+totalDays+" calendar days, as of "+fmtDate(Date.parse(todayISO+"T12:00:00Z"))+". Ends Apr 10, 2027.";
+  const money=document.getElementById("dailyMoney");
+  money.replaceChildren();
+  people.filter(person=>person.actualPoints>=thirdPlaceTotal).forEach(person=>{
+    const row=document.createElement("div");
+    row.className="daily-money-person";
+    const place=document.createElement("span");
+    place.className="place";
+    const placement=currentRanks[person.name];place.textContent=(currentRankSizes[placement]>1?"T-":"")+({1:"1st",2:"2nd",3:"3rd"}[placement]||String(placement));
+    const name=document.createElement("span");
+    name.className="money-name";
+    name.textContent=person.name;
+    const points=document.createElement("span");
+    points.className="money-points";
+    points.textContent=person.actualPoints+" pts";
+    const dot=document.createElement("span");dot.className="name-dot";dot.style.background=colors[person.name];const upper=document.createElement("div");upper.className="money-top";upper.append(place,points);const lower=document.createElement("div");lower.className="money-bottom";lower.append(dot,name);row.append(upper,lower);
+    money.appendChild(row);
+  });
+  const cutoffTied=people.filter(person=>person.actualPoints===thirdPlaceTotal).length>1;
+  document.getElementById("dailyMoneyNote").textContent=cutoffTied
+    ?"Third-place tie: prize allocation needs the pool's tiebreak rule. Through "+latestLabel+"."
+    :"";
+  document.getElementById("dailyFreshness").textContent=stale
+    ?"Scoring has not been imported for "+yesterdayISO+" or later; latest available games are "+latestLabel+". The season percentage uses today's calendar date."
+    :"";
+}
+renderDailyUpdate();
+requestAnimationFrame(fitYAxis);
+</script>
+
+<div class="jump-nav" id="jumpNav">
+  <button class="jump-toggle" id="jumpOpen" type="button" aria-label="Open section menu"
+    aria-controls="jumpPanel" aria-expanded="false">
+    <span class="jump-hamburger" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="jump-label">Menu</span>
+  </button>
+  <div class="jump-panel" id="jumpPanel" hidden>
+    <div class="jump-panel-head"><strong>Jump to</strong>
+      <button class="jump-close" id="jumpClose" type="button">Close menu</button></div>
+    <nav class="jump-links" id="jumpLinks" aria-label="Dashboard sections"></nav>
+  </div>
+</div>
+<script id="jump-menu-script">
+(() => {
+  const root=document.getElementById("jumpNav");
+  const open=document.getElementById("jumpOpen");
+  const close=document.getElementById("jumpClose");
+  const panel=document.getElementById("jumpPanel");
+  const links=document.getElementById("jumpLinks");
+  const sections=[...document.querySelectorAll("main .panel")];
+  let number=0;
+  for(const section of sections){
+    const heading=section.querySelector("h2");
+    if(!heading)continue;
+    if(!section.id)section.id="jump-section-"+(++number);
+    const label=heading.textContent.trim();
+    if(!label)continue;
+    const link=document.createElement("a");link.href="#"+section.id;link.textContent=label;
+    link.addEventListener("click",()=>setOpen(false));
+    links.append(link);
+  }
+  function setOpen(value){
+    panel.hidden=!value;root.classList.toggle("is-open",value);
+    open.setAttribute("aria-expanded",String(value));
+    if(value)close.focus();else open.focus();
+  }
+  open.addEventListener("click",()=>setOpen(panel.hidden));
+  close.addEventListener("click",()=>setOpen(false));
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape"&&!panel.hidden)setOpen(false);
+  });
+  document.addEventListener("click",event=>{
+    if(!panel.hidden&&!root.contains(event.target))setOpen(false);
+  });
+  const onScroll=()=>root.classList.toggle("is-scrolled",window.scrollY>70);
+  window.addEventListener("scroll",onScroll,{passive:true});onScroll();
+})();
+</script>
+
+<!-- player-board-script -->
+<script>(() => {
+  const data = POOL.playerBoard, panel = document.getElementById("player-board");
+  const rows = data.rows, size = 20;
+  const make = (tag,text) => {const e=document.createElement(tag); if(text!==undefined)e.textContent=text;return e;};
+  const tools=panel.querySelector(".pb-tools"), body=panel.querySelector("tbody");
+  const nav=panel.querySelector(".pb-nav"), [prev,next]=nav.querySelectorAll("button");
+  let page=0, expanded=null;
+  function filter(label,options) {
+    const wrap=make("label",label), el=make("select");
+    for(const [value,text] of options)el.add(new Option(text,value));
+    wrap.append(el);tools.append(wrap);
+    el.addEventListener("change",reset);return el;
+  }
+  const options=a=>a.map(x=>[String(x),String(x)]);
+  function multiFilter(label,values){
+    const root=make("details");root.className="pb-multi";
+    const summary=make("summary",label+": All");root.append(summary);
+    const menu=make("div");menu.className="pb-choices";
+    const selected=new Set();
+    const all=make("button","Select all");all.type="button";
+    all.onclick=()=>{selected.clear();for(const box of menu.querySelectorAll("input"))box.checked=false;update();};
+    menu.append(all);
+    for(const value of values){
+      const row=make("label"),check=make("input");check.type="checkbox";check.value=String(value);
+      check.onchange=()=>{check.checked?selected.add(String(value)):selected.delete(String(value));update();};
+      row.append(check,make("span",String(value)));menu.append(row);
+    }
+    function update(){summary.textContent=label+": "+(selected.size?selected.size+" selected":"All");reset();}
+    root.append(menu);tools.append(root);
+    return {has:value=>!selected.size||selected.has(String(value)),names:()=>selected.size?[...selected].join(", "):"All contestants"};
+  }
+  const owner=multiFilter("Contestants",[...new Set(rows.map(r=>r.owner))].sort());
+  const sort=filter("Sort by",[["total","Season points"],["night","Last night"],["week","Last 7 days"],["delta","Above round average"]]);
+  const pos=multiFilter("Positions",[...new Set(rows.map(r=>r.pos))].sort());
+  const round=multiFilter("Draft rounds",Array.from({length:12},(_,i)=>i+1));
+  const state=filter("Availability",[["","All players"],["playing","Scheduled tonight"],["injured","Injury listed"]]);
+  const groups=Array.from({length:13},(_,i)=>rows.filter(r=>r.round===i));
+  for(const r of rows){
+    const peers=groups[r.round];r.avg=peers.reduce((s,p)=>s+p.total,0)/peers.length;
+    r.delta=r.total-r.avg;r.best=r.total===Math.max(...peers.map(p=>p.total));
+    r.rank=1+rows.filter(p=>p.total>r.total).length;
+  }
+  const fmt=v=>v==null?"—":String(v);
+  const sortLabel=()=>sort.selectedOptions[0].textContent;
+  panel.querySelector(".pb-dates").textContent="";
+  function cell(tr,tag,text,cls){const el=make(tag,text);if(cls)el.className=cls;tr.append(el);return el;}
+  const puckToggle=panel.querySelector("#pb-pucks-toggle");
+  puckToggle.addEventListener("change",reset);
+  function showSeason(target,r){
+    target.replaceChildren();
+    if(!puckToggle.checked){target.classList.add("pb-season-number");target.textContent=String(r.total);return;}
+    target.classList.remove("pb-season-number");
+    const stack=make("div");stack.className="pb-point-pucks";
+    stack.setAttribute("role","img");stack.setAttribute("aria-label",r.total+" season points");
+    for(let n=0;n<Math.ceil(Math.max(0,Number(r.total)||0));n++)stack.append(make("span"));
+    target.append(stack);
+  }
+  function ownerName(name){
+    const wrap=make("span");wrap.className="pb-owner";
+    const dot=make("span");dot.className="name-dot";
+    dot.style.background=typeof colors!=="undefined"?(colors[name]||"#61758b"):"#61758b";
+    wrap.append(dot,make("span",name));return wrap;
+  }
+  function render(){
+    const roster=rows.filter(r=>owner.has(r.owner));
+    const filtered=roster.filter(r=>pos.has(r.pos)&&round.has(r.round)&&
+      (!state.value||(state.value==="playing"?r.tonight:!!r.injury)));
+    const k=sort.value;filtered.sort((a,b)=>(b[k]??-Infinity)-(a[k]??-Infinity)||b.total-a.total||a.name.localeCompare(b.name));
+    const pages=Math.max(1,Math.ceil(filtered.length/size));page=Math.max(0,Math.min(page,pages-1));
+    const sum=key=>roster.reduce((s,r)=>s+(r[key]||0),0);
+    panel.querySelector(".pb-summary").textContent=owner.names()+" · "+sum("total")+" season pts · "+sum("night")+" last night · "+sum("week")+" last 7 days · "+roster.filter(r=>r.injury).length+" injury-listed · "+roster.filter(r=>r.tonight).length+" scheduled tonight";
+    const head=make("tr");cell(head,"th","Pool\nrank","pb-rank-head");cell(head,"th","Player");cell(head,"th",sortLabel(),"pb-selected");
+    for(const h of ["Season points","Last night","Last 7","Round","Round avg","Injury","Tonight"])cell(head,"th",h,"pb-extra");
+    panel.querySelector("thead").replaceChildren(head);body.replaceChildren();
+    for(const r of filtered.slice(page*size,(page+1)*size)){
+      const tr=make("tr");cell(tr,"td",r.rank);const name=cell(tr,"td");const button=make("button",r.name);
+      button.type="button";button.className="pb-player";button.setAttribute("aria-expanded",String(expanded===r.id));
+      button.onclick=()=>{expanded=expanded===r.id?null:r.id;render();panel.querySelector('[data-player="'+r.id+'"]')?.focus()};button.dataset.player=r.id;
+      const metadata=make("div");metadata.className="pb-meta";
+      metadata.append(ownerName(r.owner),make("span","·"));
+      const logo=make("img");logo.className="pb-logo";logo.loading="lazy";
+      logo.alt=r.team+" team logo";logo.title=r.team;
+      if(/^[A-Z]{2,3}$/.test(r.team)){
+        logo.src="https://assets.nhle.com/logos/nhl/svg/"+r.team+"_light.svg";
+        logo.onerror=()=>logo.replaceWith(make("span",r.team));
+        metadata.append(logo);
+      }else metadata.append(make("span",r.team));
+      metadata.append(make("small","· "+r.pos));name.append(button,metadata);
+      const selectedCell=cell(tr,"td",k==="delta"?r.delta.toFixed(1):fmt(r[k]),"pb-selected");
+      if(puckToggle.checked){
+        const value=r[k];
+        selectedCell.replaceChildren();
+        if(value==null)selectedCell.textContent="—";
+        else {
+          const count=Math.ceil(Math.max(0,Number(value)||0));
+          const stack=make("div");stack.className="pb-point-pucks";
+          stack.setAttribute("role","img");
+          stack.setAttribute("aria-label",value+" "+sortLabel().toLowerCase()+" ("+count+" pucks)");
+          for(let n=0;n<count;n++)stack.append(make("span"));
+          selectedCell.append(stack);
+          if(Number(value)<0){const negative=make("small","Below average: "+value);selectedCell.append(negative);}
+        }
+      }else if(k==="total")showSeason(selectedCell,r);
+      const seasonCell=cell(tr,"td","","pb-extra pb-season-cell");showSeason(seasonCell,r);
+      for(const value of [fmt(r.night),fmt(r.week),r.round,r.avg.toFixed(1),r.injury||"Not listed",r.tonight?"Yes":"No"])cell(tr,"td",value,"pb-extra");
+      body.append(tr);
+      if(expanded===r.id){const detail=make("tr");detail.className="pb-detail";const td=cell(detail,"td","Season "+r.total+" · Last night "+fmt(r.night)+" · Last 7 days "+fmt(r.week)+" · Round "+r.round+" average "+r.avg.toFixed(1)+" · "+(r.best?"Round leader":r.delta<0?"Below round average":r.delta>0?"Above round average":"At round average")+" · Injury: "+(r.injury||"Not listed")+" · Scheduled tonight: "+(r.tonight?"Yes":"No"));td.colSpan=10;body.append(detail);}
+    }
+    if(!filtered.length){const tr=make("tr");cell(tr,"td","No players match these filters.").colSpan=10;body.append(tr);}
+    nav.querySelector("span").textContent=filtered.length+" players · "+(page+1)+" / "+pages;
+    prev.disabled=page===0;next.disabled=page+1>=pages;
+  }
+  function reset(){page=0;expanded=null;render();}
+  prev.onclick=()=>{page--;render()};next.onclick=()=>{page++;render()};
+  render();
+})();
+
+
+(() => {
+  const panel=document.getElementById("nightly-scores");
+  if(!panel || !POOL.playerBoard)return;
+  const data=POOL.playerBoard;
+  const grid=panel.querySelector("#ns-grid");
+  const el=(tag,txt)=>{const n=document.createElement(tag);if(txt!==undefined)n.textContent=txt;return n;};
+  panel.querySelector("#ns-date").textContent="";
+  function render(){
+    const owners=new Map();
+    for(const p of data.rows){
+      // A zero in a boxscore is an appearance; null signifies no appearance.
+      if(!(p.playedLastNight===true || (p.playedLastNight==null && p.night!=null)))continue;
+      if(typeof visibility!=="undefined" && visibility[p.owner]===false)continue;
+      if(!owners.has(p.owner))owners.set(p.owner,{name:p.owner,points:0,scored:[],quiet:[]});
+      const group=owners.get(p.owner);
+      const pts=Number(p.night)||0;
+      group.points+=pts;
+      (pts>0?group.scored:group.quiet).push({...p,night:pts});
+    }
+    const groups=[...owners.values()].sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name));
+    const top=groups.length?groups[0].points:null;
+    grid.replaceChildren();
+    if(!groups.length){grid.append(el("p","No rostered players appeared in NHL games on this date."));return;}
+    for(const g of groups){
+      const card=el("article");card.className="ns-card"+(g.points===top?" ns-top":"");
+      const head=el("div");head.className="ns-head";
+      const title=el("div"),owner=el("div");owner.className="ns-owner";
+      const dot=el("span");dot.className="name-dot";dot.style.background=typeof colors!=="undefined"?(colors[g.name]||"#61758b"):"#61758b";
+      owner.append(dot,el("span",g.name));title.append(owner);
+      if(g.points===top){const winner=el("span","★ Top contestant"+(groups.filter(x=>x.points===top).length>1?" (tied)":""));winner.className="ns-winner";title.append(winner);}
+      const score=el("span",g.points+" pt"+(g.points===1?"":"s"));score.className="ns-points";
+      head.append(title,score);card.append(head);
+      const columns=el("div");columns.className="ns-columns";
+      for(const [label,players,scoring] of [["On the scoresheet",g.scored,true],["Played · no points",g.quiet,false]]){
+        const col=el("div");col.className="ns-col";col.append(el("h3",label));
+        if(!players.length){const empty=el("div","None");empty.className="ns-empty";col.append(empty);}
+        else {
+          const list=el("ul");
+          players.sort((a,b)=>(b.night||0)-(a.night||0)||a.name.localeCompare(b.name));
+          for(const p of players){
+            const li=el("li"),entry=el("div");entry.className="ns-entry";
+            const name=el("span",p.name);
+            if(p.injury){const icon=el("span"," 🩼");icon.className="ns-injury";icon.title="Injury listing: "+p.injury;icon.setAttribute("aria-label","Injury listing: "+p.injury);name.append(icon);}
+            entry.append(name);
+            if(scoring)entry.append(el("strong",String(p.night)));
+            li.append(entry);list.append(li);
+          }
+          col.append(list);
+        }
+        columns.append(col);
+      }
+      card.append(columns);grid.append(card);
+    }
+  }
+  document.addEventListener("pool-visibility",render);
+  render();
+})();
+</script>
+<!-- end-player-board-script -->
+</body>
+</html>
