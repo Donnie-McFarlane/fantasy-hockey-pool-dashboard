@@ -2,11 +2,11 @@
 
 **Who scored last night? Who’s in the money? Which draft pick is paying off?**
 
-DonniesPool is an interactive fantasy hockey dashboard by Donnie McFarlane. Catch up on the pool in a few taps, then dig into the scoring runs, standings swings, and player performances behind the numbers. The dashboard works on phones and desktops.
+DonniesPool is a fun new way to get the most out of your hockey pool. Catch up on yesterday's action, then dig into the scoring runs, standings swings, and player performances behind the numbers. DonniesPool is built for both desktop and mobile display.
 
 **[Try the interactive demo](https://donnie-mcfarlane.github.io/fantasy-hockey-pool-dashboard/)**
 
-The public demo uses contestant aliases and a scoring snapshot through November 19, 2026. The [dashboard for Bat’s Pool 2027](https://batspool2027-private.pages.dev/) uses Cloudflare Access with a one-time email passcode for approved participants.
+The public demo shows a real pool snapshot (with aliases applied, for ego protection). Private versions [dashboard for Bat’s Pool 2027](https://batspool2027-private.pages.dev/) are secured with Cloudflare, requiring participants to enter an emailed passcode for device recognition (first-time only). Please reach out if you want me to set up a private or custom pool for you! :) [Get in touch on GitHub](https://github.com/Donnie-McFarlane).
 
 [![DonniesPool desktop demo showing cumulative season points for eleven contestants](docs/screenshots/season-points-desktop.webp)](https://donnie-mcfarlane.github.io/fantasy-hockey-pool-dashboard/)
 
@@ -100,9 +100,9 @@ Expand a feature to compare views. Select an image to see it at full size.
 
 ## Personal use and permissions
 
-DonniesPool was created by **Donnie McFarlane** and is **free for personal use**. Any other use or any adaptation requires Donnie McFarlane’s prior consent.
+DonniesPool was created by me and is **free for personal use**. Any other use or any adaptation requires my prior consent.
 
-I’m happy to discuss setting up custom fantasy sports pools for others. [Get in touch on GitHub](https://github.com/Donnie-McFarlane).
+I’m happy to chat about setting up a custom fantasy sports pool for you too! [Get in touch on GitHub](https://github.com/Donnie-McFarlane).
 
 ## Build the demo locally
 
