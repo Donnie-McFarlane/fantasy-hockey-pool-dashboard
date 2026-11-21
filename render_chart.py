@@ -46,6 +46,7 @@ def render(data, output, live):
     assert all(c["actualPoints"] == last[c["name"]] == sum(p["nhlPoints"] for p in c["players"])
                for c in stats["contestants"])
     assert {r["owner"] for r in stats["playerBoard"]["rows"]} == {c["name"] for c in stats["contestants"]}
+    stats["pool"] = "DonniesPool2027"
     stats["demo"] = not live
     if live:
         stats = relabel(stats, live_names(stats))

@@ -13,12 +13,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main(checkpoint):
-    with tempfile.TemporaryDirectory(prefix="batspool-scores-") as directory:
+    with tempfile.TemporaryDirectory(prefix="donniespool-scores-") as directory:
         folder = Path(directory)
         shutil.copyfile(checkpoint, folder / "pool_data.json")
         shutil.copyfile(ROOT / "update_pool_day.py", folder / "update_pool_day.py")
         subprocess.run([sys.executable, folder / "update_pool_day.py"], check=True, timeout=1000)
         updated = json.loads((folder / "pool_data.json").read_text(encoding="utf-8"))
+        updated["pool"] = "DonniesPool2027"
         updated["playerBoard"] = build(updated, folder)
         staging = checkpoint.with_suffix(".next")
         staging.write_text(json.dumps(updated, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")

@@ -1,4 +1,4 @@
-name: Refresh private Batspool dashboard
+name: Refresh private DonniesPool dashboard
 on:
   schedule:
     - cron: '0 3 * * *'
@@ -9,7 +9,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: private-batspool
+  group: private-donniespool
   cancel-in-progress: false
 jobs:
   publish:

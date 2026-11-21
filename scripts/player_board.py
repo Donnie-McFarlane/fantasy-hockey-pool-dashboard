@@ -1,4 +1,4 @@
-"""Build daily player statistics for the fixed Batspool rosters."""
+"""Build daily player statistics for the fixed DonniesPool rosters."""
 import concurrent.futures
 import datetime as dt
 import json
@@ -41,7 +41,7 @@ def build(pool, source_dir):
     players = [p for c in pool["contestants"] for p in c["players"]]
     # Read the same validated scoring lines as the standings, including zero-point appearances.
     import importlib.util
-    spec = importlib.util.spec_from_file_location("batspool_scores", source_dir / "update_pool_day.py")
+    spec = importlib.util.spec_from_file_location("donniespool_scores", source_dir / "update_pool_day.py")
     scoring = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(scoring)
     player_ids = {p["playerId"] for p in players}

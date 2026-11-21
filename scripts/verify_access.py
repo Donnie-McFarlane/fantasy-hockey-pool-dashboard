@@ -61,7 +61,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 opener = urllib.request.build_opener(NoRedirect)
 for attempt in range(18):
     try:
-        req = urllib.request.Request(HOST, headers={"User-Agent": "Mozilla/5.0 (compatible; BatspoolAccessCheck/1.0; +https://github.com/Donnie-McFarlane/fantasy-hockey-pool-dashboard)", "Accept": "text/html,application/xhtml+xml"})
+        req = urllib.request.Request(HOST, headers={"User-Agent": "Mozilla/5.0 (compatible; DonniesPoolAccessCheck/1.0; +https://github.com/Donnie-McFarlane/fantasy-hockey-pool-dashboard)", "Accept": "text/html,application/xhtml+xml"})
         response = opener.open(req, timeout=12)
     except urllib.error.HTTPError as exc:
         response = exc

@@ -1,4 +1,4 @@
-"""Append finalized NHL regular-season game days to Batspool2027.
+"""Append finalized NHL regular-season game days to DonniesPool2027.
 
 This fetches only the requested *new* day, in five batches of roster IDs,
 and refuses to publish a partial game night. Run the renderer afterward.
