@@ -98,11 +98,13 @@ Expand a feature to compare views. Select an image to see it at full size.
 
 </details>
 
-## Personal use and permissions
+## Licence and permissions
 
-DonniesPool was created by me and is **free for personal use**. Any other use or any adaptation requires my prior consent.
+DonniesPool was created by Donnie McFarlane. The original dashboard software is **free for personal and other noncommercial use** under the [PolyForm Strict License 1.0.0](LICENSE). Commercial use, adaptations, and redistribution outside the permissions provided by GitHub or applicable law require separate permission.
 
-I’m happy to chat about setting up a custom fantasy sports pool for you too! [Get in touch on GitHub](https://github.com/Donnie-McFarlane).
+I’m happy to discuss commercial use, adaptations, or setting up a custom fantasy sports pool for you. [Get in touch on GitHub](https://github.com/Donnie-McFarlane).
+
+The bundled Apache ECharts library is distributed under the [Apache License 2.0](licenses/LICENSE-ECharts), with its [upstream notice](licenses/NOTICE-ECharts) and [d3 component licence](licenses/LICENSE-d3).
 
 ## Build the demo locally
 

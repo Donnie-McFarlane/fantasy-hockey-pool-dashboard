@@ -68,6 +68,7 @@ def render(data, output, live):
     output.mkdir(parents=True, exist_ok=True)
     (output / "index.html").write_text(template, encoding="utf-8")
     shutil.copytree(ROOT / "assets", output / "assets", dirs_exist_ok=True)
+    shutil.copytree(ROOT / "licenses", output / "licenses", dirs_exist_ok=True)
 
 
 if __name__ == "__main__":
