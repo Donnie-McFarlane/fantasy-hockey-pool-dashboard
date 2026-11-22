@@ -21,7 +21,7 @@ from scripts.player_board import fetch
 
 TZ = ZoneInfo("America/Toronto")
 SENDER = "mcfarlane.donnie@gmail.com"
-RECIPIENTS = tuple(x.strip() for x in os.environ.get("WEEKLY_RECIPIENTS", "").split(",") if x.strip())
+RECIPIENTS = tuple(os.environ.get("WEEKLY_RECIPIENTS", "").replace(",", " ").split())
 if len(RECIPIENTS) != 2 or len(set(RECIPIENTS)) != 2 or SENDER not in RECIPIENTS:
     raise ValueError("WEEKLY_RECIPIENTS must contain exactly two distinct addresses, including the sender")
 DASHBOARD = "https://batspool2027-private.pages.dev/"
