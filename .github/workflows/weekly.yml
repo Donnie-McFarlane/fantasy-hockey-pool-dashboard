@@ -1,0 +1,40 @@
+name: Send Batspool weekly report
+on:
+  schedule:
+    - cron: '0 10 * * 0'
+      timezone: America/Toronto
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: batspool-weekly-email
+  cancel-in-progress: false
+jobs:
+  email:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: live
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore live scoring checkpoint
+        env:
+          LIVE_STATE_KEY: ${{ secrets.LIVE_STATE_KEY }}
+        run: |
+          test -n "$LIVE_STATE_KEY"
+          git fetch origin refs/heads/live-state:refs/remotes/origin/live-state
+          git show origin/live-state:scores.json.gpg > "$RUNNER_TEMP/scores.json.gpg"
+          gpg --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt \
+            --output "$RUNNER_TEMP/scores.json" "$RUNNER_TEMP/scores.json.gpg" <<< "$LIVE_STATE_KEY"
+      - name: Check SMTP configuration
+        env:
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: test -n "$GMAIL_APP_PASSWORD" || { echo '::error::GMAIL_APP_PASSWORD missing'; exit 1; }
+      - name: Calculate and send weekly report
+        env:
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python3 weekly_report.py --checkpoint "$RUNNER_TEMP/scores.json" --send
+      - name: Remove local decrypted scoring state
+        if: always()
+        run: |
+          if [[ -f "$RUNNER_TEMP/scores.json" ]]; then shred -u "$RUNNER_TEMP/scores.json" || true; fi
