@@ -4,6 +4,15 @@ on:
     - cron: '53 9 * * 0'
       timezone: America/Toronto
   workflow_dispatch:
+    inputs:
+      report_mode:
+        description: Send a complete Sunday report or a partial-week test
+        required: true
+        default: test
+        type: choice
+        options:
+          - test
+          - full
 permissions:
   contents: read
 concurrency:
@@ -49,7 +58,7 @@ jobs:
           WEEKLY_RECIPIENTS: ${{ secrets.WEEKLY_RECIPIENTS }}
           CONTESTANT_NAMES: ${{ secrets.CONTESTANT_NAMES }}
         run: |
-          if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+          if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.report_mode }}" == 'test' ]]; then
             python3 weekly_report.py --checkpoint "$RUNNER_TEMP/scores.json" --test --send
           else
             python3 weekly_report.py --checkpoint "$RUNNER_TEMP/scores.json" --send
