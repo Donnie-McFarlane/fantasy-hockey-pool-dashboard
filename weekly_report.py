@@ -44,9 +44,14 @@ def game_log(player):
     return ident, games
 
 
-def build_report(pool, now):
-    first, last, baseline = report_dates(now)
-    if pool["end"] != last.isoformat():
+def build_report(pool, now, test=False):
+    if test:
+        last = dt.date.fromisoformat(pool["end"])
+        first = last - dt.timedelta(days=6)
+        baseline = first - dt.timedelta(days=1)
+    else:
+        first, last, baseline = report_dates(now)
+    if not test and pool["end"] != last.isoformat():
         raise ValueError(f"Checkpoint ends {pool['end']}; expected {last}. Refusing stale or future results")
     roster = [p for c in pool["contestants"] for p in c["players"]]
     if len(roster) != 132 or len({p["playerId"] for p in roster}) != 132:
@@ -162,10 +167,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--checkpoint", required=True, type=Path)
     parser.add_argument("--send", action="store_true")
+    parser.add_argument("--test", action="store_true", help="Use latest validated checkpoint even when week is incomplete")
     parser.add_argument("--preview", type=Path)
     args = parser.parse_args()
-    report = build_report(json.loads(args.checkpoint.read_text()), dt.datetime.now(dt.timezone.utc))
+    report = build_report(json.loads(args.checkpoint.read_text()), dt.datetime.now(dt.timezone.utc), test=args.test)
     subject, body = render(report)
+    if args.test:
+        subject = "[TEST] " + subject
+        body = body.replace("<h1>BAT’S POOL 2027</h1>",
+            "<h1>BAT’S POOL 2027</h1><p style='background:#fff3cd;padding:10px'><strong>TEST REPORT</strong> — using only the latest validated data currently available. This is not the final weekly report.</p>")
     if args.preview:
         args.preview.write_text(body, encoding="utf-8")
     print(f"Prepared {subject} | recipient count: 1 | 12 rounds | 3 leaders")
