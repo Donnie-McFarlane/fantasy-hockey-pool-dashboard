@@ -33,6 +33,7 @@ jobs:
       - name: Calculate and send weekly report
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          WEEKLY_RECIPIENTS: ${{ secrets.WEEKLY_RECIPIENTS }}
         run: |
           if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
             python3 weekly_report.py --checkpoint "$RUNNER_TEMP/scores.json" --test --send
