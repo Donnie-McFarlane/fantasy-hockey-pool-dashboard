@@ -1,7 +1,7 @@
 name: Send Batspool weekly report
 on:
   schedule:
-    - cron: '0 10 * * 0'
+    - cron: '53 9 * * 0'
       timezone: America/Toronto
   workflow_dispatch:
 permissions:
@@ -13,9 +13,22 @@ jobs:
   email:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     environment: live
     steps:
+      - name: Hold until 10 a.m. Toronto and reject very late runs
+        if: github.event_name == 'schedule'
+        run: |
+          python3 - <<'PY'
+          import datetime as dt
+          import time
+          from zoneinfo import ZoneInfo
+          now = dt.datetime.now(ZoneInfo("America/Toronto"))
+          target = now.replace(hour=10, minute=0, second=0, microsecond=0)
+          if now.weekday() != 6 or now > target + dt.timedelta(minutes=15):
+              raise SystemExit("GitHub scheduled run arrived too late; refusing late email")
+          time.sleep(max(0, (target - now).total_seconds()))
+          PY
       - uses: actions/checkout@v4
       - name: Restore live scoring checkpoint
         env:
@@ -34,6 +47,7 @@ jobs:
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           WEEKLY_RECIPIENTS: ${{ secrets.WEEKLY_RECIPIENTS }}
+          CONTESTANT_NAMES: ${{ secrets.CONTESTANT_NAMES }}
         run: |
           if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
             python3 weekly_report.py --checkpoint "$RUNNER_TEMP/scores.json" --test --send
