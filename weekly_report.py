@@ -18,6 +18,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from scripts.player_board import fetch
+from render_chart import live_names, relabel
 
 TZ = ZoneInfo("America/Toronto")
 SENDER = "mcfarlane.donnie@gmail.com"
@@ -183,7 +184,11 @@ def main():
     parser.add_argument("--test", action="store_true", help="Use latest validated checkpoint even when week is incomplete")
     parser.add_argument("--preview", type=Path)
     args = parser.parse_args()
-    report = build_report(json.loads(args.checkpoint.read_text()), dt.datetime.now(dt.timezone.utc), test=args.test)
+    pool = json.loads(args.checkpoint.read_text())
+    # Match the private dashboard: validate secret and replace every contestant
+    # alias consistently, including history keys and player owner fields.
+    pool = relabel(pool, live_names(pool))
+    report = build_report(pool, dt.datetime.now(dt.timezone.utc), test=args.test)
     subject, body = render(report)
     if args.test:
         subject = "[TEST] " + subject
