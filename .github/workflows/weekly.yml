@@ -25,7 +25,7 @@ jobs:
           from zoneinfo import ZoneInfo
           now = dt.datetime.now(ZoneInfo("America/Toronto"))
           target = now.replace(hour=10, minute=0, second=0, microsecond=0)
-          if now.weekday() != 6 or now > target + dt.timedelta(minutes=15):
+          if now.weekday() != 6 or now > target + dt.timedelta(hours=1):
               raise SystemExit("GitHub scheduled run arrived too late; refusing late email")
           time.sleep(max(0, (target - now).total_seconds()))
           PY
