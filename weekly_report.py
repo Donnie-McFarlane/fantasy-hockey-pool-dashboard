@@ -57,6 +57,7 @@ def build_report(pool, now, test=False):
     if len(roster) != 132 or len({p["playerId"] for p in roster}) != 132:
         raise ValueError("Expected 132 uniquely drafted players")
     draft = json.loads((Path(__file__).parent / "scripts/draft.json").read_text())
+    current_teams = {row["id"]: row["team"] for row in pool.get("playerBoard", {}).get("rows", [])}
     history = {x["date"]: x for x in pool["history"]}
     if baseline.isoformat() not in history or last.isoformat() not in history:
         raise ValueError("Missing standings boundary date")
@@ -84,8 +85,9 @@ def build_report(pool, now, test=False):
         game_counts[name][0] += before_games
         game_counts[name][1] += after_games
         round_no = int(draft[str(p["playerId"])][0])
+        team = current_teams.get(p["playerId"]) or draft[str(p["playerId"])][2]
         by_player.append({"name": p["name"], "owner": name, "round": round_no,
-                          "points": week_points, "games": games})
+                          "points": week_points, "team": team, "games": games})
 
     contestants = []
     for c in pool["contestants"]:
@@ -137,7 +139,15 @@ def render(report):
     short = f"{start:%b %d}–{last + dt.timedelta(days=1):%b %d, %Y}"
     tr = lambda cells: "<tr>" + "".join(f"<td>{h(cell)}</td>" for cell in cells) + "</tr>"
     three = "".join(tr([i, p["name"], p["weekly"]]) for i, p in enumerate(report["top_three"], 1))
-    twelve = "".join(tr([i, p["name"], p["round"], p["points"]]) for i, p in enumerate(report["top_rounds"], 1))
+    twelve = ""
+    for p in report["top_rounds"]:
+        team = h(p["team"])
+        # The abbreviated team name is an accessible fallback when an email
+        # client blocks remote SVG images.
+        logo = (f"<img src='https://assets.nhle.com/logos/nhl/svg/{team}_light.svg' "
+                f"alt='{team}' width='19' height='19' style='vertical-align:middle;margin-right:4px'>")
+        twelve += ("<tr>" + f"<td>{p['round']}</td><td>{p['points']}</td>"
+                   + f"<td>{logo}<span>{h(p['name'])}</span></td><td>{h(p['owner'])}</td></tr>")
     bp, bc, pace = report["best_player"], report["best_contestant"], report["pace"]
     date = lambda d: dt.date.fromisoformat(d).strftime("%B %d")
     style = "font-family:Arial,sans-serif;color:#203040;max-width:660px;margin:auto;line-height:1.5"
@@ -150,11 +160,11 @@ def render(report):
 <table style='{table}'><tr><th>Rank</th><th>Contestant</th><th>Points</th></tr>{three}</table><hr>
 <h3>TOP 12 PICKS OF THE WEEK</h3>
 <p><em>The highest-scoring player from each draft round, ranked by points earned this week.</em></p>
-<table style='{table}'><tr><th>Rank</th><th>Player</th><th>Round</th><th>Points</th></tr>{twelve}</table><hr>
+<table style='{table};table-layout:fixed;font-size:12px;overflow-wrap:anywhere'><tr><th style='width:12%'>Round</th><th style='width:15%'>Points</th><th style='width:40%'>Player</th><th style='width:33%'>Contestant</th></tr>{twelve}</table><hr>
 <h3>WEEKLY HIGHLIGHTS</h3>
 <p><strong>Best Day for a Player</strong><br>{h(bp[1])} ({h(bp[2])}) — <strong>{bp[0]} points</strong> on {h(date(bp[3]))}</p>
 <p><strong>Best Day for a Contestant</strong><br>{h(bc[1])} — <strong>{bc[0]} points</strong> on {h(date(bc[2]))}</p>
-<p><strong>Best Jump in Scoring Pace this Week</strong><br>{h(pace['name'])} — <strong>{pace['ppg_jump']:+.2f} PPG</strong></p><hr>
+<p><strong>Best Jump in Scoring Pace this Week</strong><br>{h(pace['name'])}</p><hr>
 <h3>FULL STANDINGS &amp; ANALYSIS</h3>
 <p>See who’s moving up, who’s falling behind, and how your picks compare.</p>
 <p><a href='{DASHBOARD}' style='display:inline-block;background:#176ba0;color:white;padding:12px 20px;text-decoration:none;border-radius:5px;font-weight:bold'>VIEW THE LIVE DASHBOARD</a></p><hr>
