@@ -20,7 +20,8 @@ from zoneinfo import ZoneInfo
 from scripts.player_board import fetch
 
 TZ = ZoneInfo("America/Toronto")
-RECIPIENT = "mcfarlane.donnie@gmail.com"
+SENDER = "mcfarlane.donnie@gmail.com"
+RECIPIENTS = (SENDER, "don.mcfarlane09@gmail.com")
 DASHBOARD = "https://batspool2027-private.pages.dev/"
 SEASON = "20262027"
 
@@ -168,7 +169,7 @@ def render(report):
 <h3>FULL STANDINGS &amp; ANALYSIS</h3>
 <p>See who’s moving up, who’s falling behind, and how your picks compare.</p>
 <p><a href='{DASHBOARD}' style='display:inline-block;background:#176ba0;color:white;padding:12px 20px;text-decoration:none;border-radius:5px;font-weight:bold'>VIEW THE LIVE DASHBOARD</a></p><hr>
-<p style='font-size:12px;color:#536575'><em>For questions or feedback, please email {RECIPIENT}</em></p>
+<p style='font-size:12px;color:#536575'><em>For questions or feedback, please email {SENDER}</em></p>
 </main></body></html>"""
     return f"Week in Review - Batspool2027 | {short}", body
 
@@ -188,21 +189,21 @@ def main():
             "<h1>BAT’S POOL 2027</h1><p style='background:#fff3cd;padding:10px'><strong>TEST REPORT</strong> — using only the latest validated data currently available. This is not the final weekly report.</p>")
     if args.preview:
         args.preview.write_text(body, encoding="utf-8")
-    print(f"Prepared {subject} | recipient count: 1 | 12 rounds | 3 leaders")
+    print(f"Prepared {subject} | recipient count: {len(RECIPIENTS)} | 12 rounds | 3 leaders")
     if args.send:
         password = os.environ.get("GMAIL_APP_PASSWORD")
         if not password:
             raise ValueError("GMAIL_APP_PASSWORD is missing")
         msg = EmailMessage()
-        msg["From"] = RECIPIENT
-        msg["To"] = RECIPIENT
+        msg["From"] = SENDER
+        msg["To"] = ", ".join(RECIPIENTS)
         msg["Subject"] = subject
         msg.set_content("View the weekly report in an HTML-capable email client: " + DASHBOARD)
         msg.add_alternative(body, subtype="html")
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context(), timeout=30) as smtp:
-            smtp.login(RECIPIENT, password)
-            smtp.send_message(msg)
-        print("Email accepted by Gmail SMTP for sole recipient")
+            smtp.login(SENDER, password)
+            smtp.send_message(msg, to_addrs=RECIPIENTS)
+        print("Email accepted by Gmail SMTP for both configured recipients")
 
 
 if __name__ == "__main__":
