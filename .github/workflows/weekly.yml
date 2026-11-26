@@ -1,18 +1,27 @@
-name: Send Batspool weekly report
+name: Send Batspool report
 on:
   schedule:
-    - cron: '53 9 * * 0'
+    - cron: '53 7 * * 0,3,5'
       timezone: America/Toronto
+    - cron: '13,28,43,58 8,9 * * 0,3,5'
+      timezone: America/Toronto
+  push:
+    branches: [main]
+    paths: ['.github/workflows/weekly.yml']
   workflow_dispatch:
     inputs:
       report_mode:
-        description: Send a complete Sunday report or a partial-week test
+        description: Send a scheduled report or a test
         required: true
         default: test
         type: choice
         options:
           - test
           - full
+      report_date:
+        description: Optional historical report date (YYYY-MM-DD)
+        required: false
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -20,12 +29,12 @@ concurrency:
   cancel-in-progress: false
 jobs:
   email:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'push' || contains(github.event.head_commit.message, '[send-nov25]'))
     runs-on: ubuntu-latest
     timeout-minutes: 40
     environment: live
     steps:
-      - name: Hold until 10 a.m. Toronto and reject very late runs
+      - name: Hold until 8 a.m. Toronto and reject very late runs
         if: github.event_name == 'schedule'
         run: |
           python3 - <<'PY'
@@ -33,12 +42,14 @@ jobs:
           import time
           from zoneinfo import ZoneInfo
           now = dt.datetime.now(ZoneInfo("America/Toronto"))
-          target = now.replace(hour=10, minute=0, second=0, microsecond=0)
-          if now.weekday() != 6 or now > target + dt.timedelta(hours=1):
+          target = now.replace(hour=8, minute=0, second=0, microsecond=0)
+          if now.weekday() not in (2, 4, 6) or now >= target + dt.timedelta(hours=2):
               raise SystemExit("GitHub scheduled run arrived too late; refusing late email")
           time.sleep(max(0, (target - now).total_seconds()))
           PY
       - uses: actions/checkout@v4
+      - name: Validate Python syntax
+        run: python3 -m py_compile weekly_report.py
       - name: Restore live scoring checkpoint
         env:
           LIVE_STATE_KEY: ${{ secrets.LIVE_STATE_KEY }}
@@ -52,13 +63,18 @@ jobs:
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: test -n "$GMAIL_APP_PASSWORD" || { echo '::error::GMAIL_APP_PASSWORD missing'; exit 1; }
-      - name: Calculate and send weekly report
+      - name: Calculate and send report
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           WEEKLY_RECIPIENTS: ${{ secrets.WEEKLY_RECIPIENTS }}
           CONTESTANT_NAMES: ${{ secrets.CONTESTANT_NAMES }}
+          REPORT_DATE: ${{ inputs.report_date }}
         run: |
-          if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.report_mode }}" == 'test' ]]; then
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            python3 weekly_report.py --checkpoint "$RUNNER_TEMP/scores.json" --report-date 2026-11-25 --send
+          elif [[ -n "$REPORT_DATE" ]]; then
+            python3 weekly_report.py --checkpoint "$RUNNER_TEMP/scores.json" --report-date "$REPORT_DATE" --send
+          elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.report_mode }}" == 'test' ]]; then
             python3 weekly_report.py --checkpoint "$RUNNER_TEMP/scores.json" --test --send
           else
             python3 weekly_report.py --checkpoint "$RUNNER_TEMP/scores.json" --send
