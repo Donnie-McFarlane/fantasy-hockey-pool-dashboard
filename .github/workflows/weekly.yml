@@ -1,10 +1,10 @@
 name: Send Batspool report
 on:
   schedule:
-    - cron: '53 7 * * 0,3,5'
-      timezone: America/Toronto
-    - cron: '13,28,43,58 8,9 * * 0,3,5'
-      timezone: America/Toronto
+    # UTC triggers cover both EST and EDT, avoiding timezone-specific scheduler behavior.
+    # The local-time gate sends at 10:00-11:00 Toronto time; IMAP prevents duplicates.
+    - cron: '53 13,14 * * 0,3,5'
+    - cron: '13,33,53 15 * * 0,3,5'
   push:
     branches: [main]
     paths: ['.github/workflows/weekly.yml']
@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 40
     environment: live
     steps:
-      - name: Hold until 8 a.m. Toronto and reject very late runs
+      - name: Hold until 10 a.m. Toronto and reject runs outside the delivery window
         if: github.event_name == 'schedule'
         run: |
           python3 - <<'PY'
@@ -42,8 +42,8 @@ jobs:
           import time
           from zoneinfo import ZoneInfo
           now = dt.datetime.now(ZoneInfo("America/Toronto"))
-          target = now.replace(hour=8, minute=0, second=0, microsecond=0)
-          if now.weekday() not in (2, 4, 6) or now >= target + dt.timedelta(hours=2):
+          target = now.replace(hour=10, minute=0, second=0, microsecond=0)
+          if now.weekday() not in (2, 4, 6) or now < target - dt.timedelta(minutes=10) or now >= target + dt.timedelta(hours=1):
               raise SystemExit("GitHub scheduled run arrived too late; refusing late email")
           time.sleep(max(0, (target - now).total_seconds()))
           PY
