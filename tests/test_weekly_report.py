@@ -97,6 +97,24 @@ class DisplayRules(unittest.TestCase):
         self.assertNotIn("Top 3 Picks",txt)
         self.assertNotIn("Top 1 Picks",txt)
 
+    def test_picks_count_and_logo_in_period(self):
+        from datetime import date
+        data={"first":date(2026,11,25),"last":date(2026,11,26),
+              "players":[player(6,name="A"),player(4,name="B"),
+                         player(3,name="C"),player(0,name="D")],
+              "delta":{"A":13},"moves":{"A":0},
+              "rb":{"A":1},"ra":{"A":1},"pd":[]}
+        txt=wr.render_period(data)
+        self.assertIn("Top 3 Picks",txt)
+        self.assertIn("TOR_light.svg",txt)
+        self.assertNotIn("D (TOR)",txt)
+
+    def test_sunday_player_highlight_has_logo(self):
+        data=[(5,"Sample Player","Contestant","2026-11-27")]
+        txt=wr.peak_players_html(data,{"Sample Player":"MTL"})
+        self.assertIn("MTL_light.svg",txt)
+        self.assertIn("Sample Player",txt)
+
     def test_report_versions_are_shared(self):
         self.assertEqual(wr.SUBJECTS[2], "The SMT Report")
         self.assertEqual(wr.SUBJECTS[4], "The Friday Check-Up")
