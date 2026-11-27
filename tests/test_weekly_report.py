@@ -1,0 +1,109 @@
+"""Regression tests for shared Wednesday/Friday/Sunday email formatting."""
+import os
+import unittest
+from unittest.mock import patch
+
+import weekly_report as wr
+
+
+def player(points, goals=0, name="Example", season=0):
+    return dict(points=points, goals=goals, name=name, season=season,
+                team="TOR", round=1, owner="Contestant")
+
+
+def group(*tiers):
+    return [player(value, name=f"Player {i}") for i, value
+            in enumerate((pts for score, count in tiers for pts in [score] * count))]
+
+
+class PickRules(unittest.TestCase):
+    def check(self, tiers, expected):
+        data = group(*tiers)
+        selected = wr.top_picks(data)
+        self.assertEqual([p["points"] for p in selected], expected)
+        self.assertLessEqual(len(selected), 5)
+
+    def test_no_points(self):
+        self.check([], [])
+        self.check([(0, 11)], [])
+
+    def test_top_tier_three_plus_only(self):
+        self.check([(8, 3), (7, 2), (6, 1)], [8, 8, 8])
+        self.check([(8, 7), (7, 1)], [8] * 5)
+
+    def test_top_plus_second_tier(self):
+        self.check([(8, 1), (6, 3), (5, 1)], [8, 6, 6, 6])
+        self.check([(8, 1), (6, 7)], [8, 6, 6, 6, 6])
+
+    def test_third_tier_and_limit(self):
+        self.check([(9, 1), (8, 1), (7, 3)], [9, 8, 7, 7, 7])
+        self.check([(9, 1), (8, 1), (7, 4)], [9, 8])
+        self.check([(9, 2), (8, 1), (7, 2)], [9, 9, 8, 7, 7])
+        self.check([(9, 2), (8, 1), (7, 3)], [9, 9, 8])
+        self.check([(9, 2), (8, 2), (7, 1)], [9, 9, 8, 8, 7])
+
+    def test_half_of_top_cutoff(self):
+        self.check([(10, 1), (5, 2), (4, 3)], [10, 5, 5])
+        self.check([(9, 1), (4, 8)], [9])
+        self.check([(1, 2)], [1, 1])
+
+    def test_tie_breaker(self):
+        data=[player(5, goals=1, name="X"),player(5, goals=3, name="Y"),
+              player(5, goals=2, name="Z")]
+        self.assertEqual([x["name"] for x in wr.top_picks(data)], ["Y","Z","X"])
+
+
+class DisplayRules(unittest.TestCase):
+    def test_ordinals(self):
+        self.assertEqual(wr.ordinal(1), "1st")
+        self.assertEqual(wr.ordinal(2), "2nd")
+        self.assertEqual(wr.ordinal(3), "3rd")
+        self.assertEqual(wr.ordinal(11), "11th")
+        self.assertEqual(wr.ordinal(12), "12th")
+        self.assertEqual(wr.ordinal(13), "13th")
+        self.assertEqual(wr.ordinal(21), "21st")
+        self.assertEqual(wr.ordinal(22), "22nd")
+        self.assertEqual(wr.ordinal(23), "23rd")
+        self.assertEqual(wr.ordinal(32), "32nd")
+        self.assertEqual(wr.ordinal(None), "N/A")
+
+    def test_blank_compact_header(self):
+        txt=wr.table(["Matchup","PTS","LG","L5"],[[wr.Markup(wr.logo("MTL")+"MTL @"),42,"2nd","3-1-1"]],
+                     compact_header=True)
+        self.assertNotIn(">Matchup<",txt)
+        self.assertNotIn(">PTS<",txt)
+        self.assertIn("height:7px",txt)
+        self.assertIn("MTL_light.svg",txt)
+        self.assertIn("MTL @",txt)
+        self.assertIn("color:#000",txt)
+
+    def test_first_matchup_has_true_header(self):
+        txt=wr.table(["Matchup","PTS","LG","L5"],[["TOR",30,"1st","4-0-1"]])
+        self.assertIn(">Matchup<",txt)
+        self.assertIn(">LG<",txt)
+        self.assertNotIn("height:7px",txt)
+
+    def test_bad_logo_token_ignored(self):
+        self.assertEqual(wr.logo('<bad>'), "")
+        self.assertIn('alt="TOR logo"',wr.logo("TOR"))
+
+    def test_no_scorers_omits_top_picks(self):
+        from datetime import date
+        empty={"first":date(2026,11,25),"last":date(2026,11,26),
+               "players":[player(0)],"delta":{"A":0},"moves":{"A":0},
+               "rb":{"A":1},"ra":{"A":1},"pd":[]}
+        txt=wr.render_period(empty)
+        self.assertNotIn("Top 0 Picks",txt)
+        self.assertNotIn("Top 3 Picks",txt)
+        self.assertNotIn("Top 1 Picks",txt)
+
+    def test_report_versions_are_shared(self):
+        self.assertEqual(wr.SUBJECTS[2], "The SMT Report")
+        self.assertEqual(wr.SUBJECTS[4], "The Friday Check-Up")
+        self.assertEqual(wr.SUBJECTS[6], "The Sunday Review")
+        from datetime import date
+        self.assertEqual(wr.windows(date(2026,11,27))[0],date(2026,11,25))
+
+
+if __name__ == "__main__":
+    unittest.main()
