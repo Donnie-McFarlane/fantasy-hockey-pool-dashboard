@@ -1,0 +1,21 @@
+name: Validate Batspool email formatting
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'weekly_report.py'
+      - 'tests/test_weekly_report.py'
+      - '.github/workflows/email-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Python syntax
+        run: python3 -m py_compile weekly_report.py tests/test_weekly_report.py
+      - name: Run report formatting regression tests
+        run: python3 -m unittest discover -s tests -p 'test_weekly_report.py' -v
