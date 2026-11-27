@@ -29,7 +29,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   email:
-    if: github.ref == 'refs/heads/main' && (github.event_name != 'push' || contains(github.event.head_commit.message, '[send-nov25]'))
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'push' || contains(github.event.head_commit.message, '[send-nov27]'))
     runs-on: ubuntu-latest
     timeout-minutes: 40
     environment: live
@@ -71,7 +71,7 @@ jobs:
           REPORT_DATE: ${{ inputs.report_date }}
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            python3 weekly_report.py --checkpoint "$RUNNER_TEMP/scores.json" --report-date 2026-11-25 --send
+            python3 weekly_report.py --checkpoint "$RUNNER_TEMP/scores.json" --report-date 2026-11-27 --send
           elif [[ -n "$REPORT_DATE" ]]; then
             python3 weekly_report.py --checkpoint "$RUNNER_TEMP/scores.json" --report-date "$REPORT_DATE" --send
           elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.report_mode }}" == 'test' ]]; then
