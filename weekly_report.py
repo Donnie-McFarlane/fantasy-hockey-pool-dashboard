@@ -275,7 +275,7 @@ def main():
     if not args.send: return
     if len(RECIPIENTS)!=2 or len(set(RECIPIENTS))!=2 or SENDER not in RECIPIENTS: raise ValueError("Invalid recipient configuration")
     password=os.environ["GMAIL_APP_PASSWORD"]
-    if not args.test and not args.report_date and (now.hour<8 or dt.datetime.now(TZ).hour>=10): raise ValueError("Outside delivery window")
+    if not args.test and not args.report_date and not (10 <= dt.datetime.now(TZ).hour < 11): raise ValueError("Outside 10–11 a.m. Toronto delivery window")
     mid=f"<batspool-{day}{'-test' if args.test else ''}@gmail.com>"
     with imaplib.IMAP4_SSL("imap.gmail.com",timeout=30) as imap:
         imap.login(SENDER,password)
