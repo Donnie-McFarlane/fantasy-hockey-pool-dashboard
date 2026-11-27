@@ -4,7 +4,7 @@ on:
     # UTC triggers cover both EST and EDT, avoiding timezone-specific scheduler behavior.
     # The local-time gate sends at 10:00-11:00 Toronto time; IMAP prevents duplicates.
     - cron: '53 13,14 * * 0,3,5'
-    - cron: '13,33,53 15 * * 0,3,5'
+    - cron: '33 15 * * 0,3,5'
   push:
     branches: [main]
     paths: ['.github/workflows/weekly.yml']
@@ -34,23 +34,32 @@ jobs:
     timeout-minutes: 40
     environment: live
     steps:
-      - name: Hold until 10 a.m. Toronto and reject runs outside the delivery window
+      - name: Hold until 10 a.m. Toronto or skip out-of-window runs
+        id: timing
         if: github.event_name == 'schedule'
         run: |
           python3 - <<'PY'
           import datetime as dt
+          import os
           import time
           from zoneinfo import ZoneInfo
           now = dt.datetime.now(ZoneInfo("America/Toronto"))
           target = now.replace(hour=10, minute=0, second=0, microsecond=0)
-          if now.weekday() not in (2, 4, 6) or now < target - dt.timedelta(minutes=10) or now >= target + dt.timedelta(hours=1):
-              raise SystemExit("GitHub scheduled run arrived too late; refusing late email")
-          time.sleep(max(0, (target - now).total_seconds()))
+          eligible = now.weekday() in (2, 4, 6) and target - dt.timedelta(minutes=10) <= now < target + dt.timedelta(hours=1)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write("send=" + str(eligible).lower() + "\n")
+          if eligible:
+              time.sleep(max(0, (target - now).total_seconds()))
+          else:
+              print("Outside delivery window; skipping without sending")
           PY
       - uses: actions/checkout@v4
+        if: steps.timing.outputs.send != 'false'
       - name: Validate Python syntax
+        if: steps.timing.outputs.send != 'false'
         run: python3 -m py_compile weekly_report.py
       - name: Restore live scoring checkpoint
+        if: steps.timing.outputs.send != 'false'
         env:
           LIVE_STATE_KEY: ${{ secrets.LIVE_STATE_KEY }}
         run: |
@@ -60,10 +69,12 @@ jobs:
           gpg --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt \
             --output "$RUNNER_TEMP/scores.json" "$RUNNER_TEMP/scores.json.gpg" <<< "$LIVE_STATE_KEY"
       - name: Check SMTP configuration
+        if: steps.timing.outputs.send != 'false'
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: test -n "$GMAIL_APP_PASSWORD" || { echo '::error::GMAIL_APP_PASSWORD missing'; exit 1; }
       - name: Calculate and send report
+        if: steps.timing.outputs.send != 'false'
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           WEEKLY_RECIPIENTS: ${{ secrets.WEEKLY_RECIPIENTS }}
