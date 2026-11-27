@@ -188,7 +188,16 @@ def move_text(s, all_moves=False):
 
 def peak(rows):
     if not rows or max(x[0] for x in rows)<=0: return "N/A"
-    return "; ".join(f"{x[1]} — {x[0]} pts ({x[-1]})" for x in sorted(rows) if x[0]==max(y[0] for y in rows))
+    best=max(x[0] for x in rows)
+    return "; ".join(f"{x[1]} — {x[0]} pts ({x[-1]})" for x in sorted(rows) if x[0]==best)
+
+def peak_players_html(rows, by_name):
+    if not rows or max(x[0] for x in rows)<=0:
+        return para("N/A")
+    best=max(x[0] for x in rows)
+    items=[logo(by_name.get(x[1]))+h(x[1])+f" — {x[0]} pts ("+h(x[-1])+")"
+           for x in sorted(rows) if x[0]==best]
+    return "<p>"+"; ".join(items)+"</p>"
 
 def render_period(s,weekly=False,played=True):
     out=section("Week in Review" if weekly else f"{s['first']:%A}–{s['last']:%A} Review")+para(f"{s['first']:%b %d}–{s['last']:%b %d}")
@@ -209,7 +218,7 @@ def render_period(s,weekly=False,played=True):
         out+=table(["Player","PTS","Round","Contestant"],[(player_label(p["name"],p["team"]),p["points"],p["round"],p["owner"]) for p in picks])
     if weekly:
         # Both highlights use player logo information from the reporting roster.
-        out+=field("Most Points by a Player in One Day",peak(s["pd"]))
+        out+="<h3>Most Points by a Player in One Day</h3>"+peak_players_html(s["pd"],by_name)
         out+=field("Most Points by a Contestant in One Day",peak([(v,n,d) for (n,d),v in s["cd"].items()]))
         pace=s["pace"]
         out+=field("Best Jump in Scoring Pace this Week"," & ".join(sorted(n for n,v in pace.items() if v==max(pace.values()))) if pace and max(pace.values())>0 else "N/A")
