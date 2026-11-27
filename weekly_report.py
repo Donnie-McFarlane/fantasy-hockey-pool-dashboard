@@ -12,6 +12,7 @@ import imaplib
 from collections import defaultdict
 import json
 import os
+import re
 import smtplib
 import ssl
 import subprocess
@@ -63,8 +64,36 @@ def player_key(p):
     return (-p["points"],-p["goals"],p["season"],parts[-1],p["name"].casefold())
 
 def top_picks(players):
-    ordered=sorted((p for p in players if p["points"]>0),key=player_key)
-    return [p for p in ordered if p["points"]>=ordered[min(2,len(ordered)-1)]["points"]][:5] if ordered else []
+    """Select point tiers, retaining the existing deterministic tie breakers.
+
+    Never include zero-point players or a tier below half the leader's points.
+    A tier is all players with the same point total. At most five appear.
+    """
+    ordered = sorted((p for p in players if p["points"] > 0), key=player_key)
+    if not ordered:
+        return []
+    leader = ordered[0]["points"]
+    tiers = []
+    for p in ordered:
+        if 2 * p["points"] < leader:
+            break
+        if not tiers or tiers[-1][0]["points"] != p["points"]:
+            tiers.append([])
+        tiers[-1].append(p)
+    top = tiers[0]
+    if len(top) >= 3:
+        return top[:5]
+    if len(tiers) == 1:
+        return top
+    second = tiers[1]
+    if len(top) == 1 and len(second) >= 2:
+        return (top + second)[:5]
+    selected = (top + second)[:5]
+    if len(tiers) >= 3 and len(selected) == len(top) + len(second):
+        third = tiers[2]
+        if len(third) <= 3 and len(selected) + len(third) <= 5:
+            selected += third
+    return selected[:5]
 
 def summarize(pool, logs, first, last, draft):
     names=[c["name"] for c in pool["contestants"]]
@@ -102,18 +131,49 @@ def h(v): return html.escape(str(v))
 def para(s): return "<p>"+h(s)+"</p>"
 def section(s): return "<hr><h2>"+h(s)+"</h2>"
 def field(label,value): return "<h3>"+h(label)+"</h3>"+para(value)
-def table(headers, rows, heat=False):
-    out="<table style='border-collapse:collapse;width:100%;color:#000'><tr>"+"".join("<th style='padding:5px;background:#e8edf2;text-align:left'>"+h(x)+"</th>" for x in headers)+"</tr>"
+
+class Markup(str):
+    """Trusted, internally generated HTML for a table cell."""
+
+def logo(team, size=19):
+    if not isinstance(team, str) or not re.fullmatch(r"[A-Z]{2,4}", team):
+        return ""
+    url = f"https://assets.nhle.com/logos/nhl/svg/{team}_light.svg"
+    return (f'<img src="{url}" alt="{h(team)} logo" width="{size}" height="{size}" '
+            'style="vertical-align:middle;margin-right:4px" />')
+
+def player_label(name, team):
+    return Markup(logo(team) + h(name) + " (" + h(team) + ")")
+
+def ordinal(value):
+    if not isinstance(value, int) or not 1 <= value <= 32:
+        return "N/A"
+    suffix = "th" if 11 <= value % 100 <= 13 else {1:"st",2:"nd",3:"rd"}.get(value % 10, "th")
+    return str(value) + suffix
+
+def table(headers, rows, heat=False, compact_header=False):
+    out='<table style="border-collapse:collapse;width:100%;color:#000">'
+    if compact_header:
+        # Keep the visual divider between successive matchups without
+        # repeating column labels (roughly half the normal header height).
+        out += '<tr>' + ''.join(
+            '<th style="padding:2px 5px;height:7px;font-size:8px;line-height:7px;background:#e8edf2">&nbsp;</th>'
+            for _ in headers) + '</tr>'
+    else:
+        out += '<tr>' + ''.join(
+            '<th style="padding:5px;background:#e8edf2;text-align:left;color:#000">'+h(x)+'</th>'
+            for x in headers) + '</tr>'
     for i,row in enumerate(rows):
-        out+="<tr>"
+        out += "<tr>"
         for j,v in enumerate(row):
-            bg="#f4f6f8" if i%2 else "#fff"
+            bg = "#f4f6f8" if i%2 else "#fff"
             if heat and j and isinstance(v,tuple):
                 count,injured=v
                 bg=f"rgb({255-int(min(count,12)*6)},{255-int(min(count,12)*2)},{255-int(min(count,12)*3)})"
                 v=str(count)+(f" ({injured})" if injured else "")
-            out+=f"<td style='padding:5px;border-bottom:1px solid #ddd;background:{bg};color:#000'>"+h(v)+"</td>"
-        out+="</tr>"
+            cell = str(v) if isinstance(v,Markup) else h(v)
+            out+=f'<td style="padding:5px;border-bottom:1px solid #ddd;background:{bg};color:#000">'+cell+'</td>'
+        out += "</tr>"
     return out+"</table>"
 
 def leaders(values, positive=False):
@@ -132,18 +192,23 @@ def peak(rows):
 
 def render_period(s,weekly=False,played=True):
     out=section("Week in Review" if weekly else f"{s['first']:%A}–{s['last']:%A} Review")+para(f"{s['first']:%b %d}–{s['last']:%b %d}")
+    by_name={p["name"]:p["team"] for p in s["players"]}
     if weekly:
         order=s["ordered"]
         cutoff=s["delta"][order[min(2,len(order)-1)]] if order else 0
         out+="<h3>Top 3 Contestants of the Week</h3>"+(table(["Contestant","PTS"],[(n,s["delta"][n]) for n in order if s["delta"][n]>=cutoff]) if played else para("N/A"))
         picks=sorted((p for p in s["rounds"] if p and p["points"]>0),key=player_key)
-        out+="<h3>Top 12 Picks of the Week</h3>"+para("Best player this week per draft round, sorted by points.")
+        if picks:
+            out+="<h3>Top 12 Picks of the Week</h3>"+para("Best player this week per draft round, sorted by points.")
     else:
         out+=field("Top Contestant",leaders(s["delta"],True) if played else "N/A")
         picks=top_picks(s["players"])
-        out+="<h3>Top 3 Picks</h3>"
-    out+=table(["Player","PTS","Round","Contestant"],[(p["name"]+" ("+p["team"]+")",p["points"],p["round"],p["owner"]) for p in picks]) if picks else para("N/A")
+        if picks:
+            out+=f"<h3>Top {len(picks)} Picks</h3>"
+    if picks:
+        out+=table(["Player","PTS","Round","Contestant"],[(player_label(p["name"],p["team"]),p["points"],p["round"],p["owner"]) for p in picks])
     if weekly:
+        # Both highlights use player logo information from the reporting roster.
         out+=field("Most Points by a Player in One Day",peak(s["pd"]))
         out+=field("Most Points by a Contestant in One Day",peak([(v,n,d) for (n,d),v in s["cd"].items()]))
         pace=s["pace"]
@@ -152,7 +217,9 @@ def render_period(s,weekly=False,played=True):
         out+=section("Current Standings")+table(["Rank","Contestant","PTS","Week","+/-","Behind lead","Behind money"],[(s["ra"][n],n,s["after"][n],s["delta"][n],f"{s['moves'][n]:+d}" if s["moves"][n] else "—",max(s["after"].values())-s["after"][n],max(0,sorted(s["after"].values(),reverse=True)[min(2,len(s["after"])-1)]-s["after"][n])) for n in sorted(s["names"],key=lambda n:(s["ra"][n],n))])
     else:
         hits=[x for x in s["pd"] if x[0]>=4]
-        if hits: out+=field("4+ Point Performances","; ".join(f"{x[3]}: {x[1]} — {x[0]} pts" for x in sorted(hits,key=lambda x:(x[3],-x[0],x[1]))))
+        if hits:
+            parts=[h(x[3])+": "+logo(by_name.get(x[1]))+h(x[1])+f" — {x[0]} pts" for x in sorted(hits,key=lambda x:(x[3],-x[0],x[1]))]
+            out+="<h3>4+ Point Performances</h3><p>"+"; ".join(parts)+"</p>"
         out+=field("Biggest Climb in Standings",move_text(s))
     return out
 
@@ -165,7 +232,7 @@ def box_highlights(g):
             for p in rows[side][group]:
                 goals=int(p["goals"]); pts=int(p["points"])
                 if goals>=3 or pts>=4:
-                    out.append((p["name"]["default"],goals,pts))
+                    out.append((p["name"]["default"],goals,pts,g[side]["abbrev"]))
     return out
 
 def team_stats(day, teams):
@@ -182,8 +249,8 @@ def team_stats(day, teams):
             if own["score"]>opp["score"]: w+=1
             elif g.get("gameOutcome",{}).get("lastPeriodType") in ("OT","SO"): o+=1
             elif g.get("gameOutcome",{}).get("lastPeriodType")=="REG": l+=1
-            else: return team,(x.get("points","N/A"),x.get("divisionSequence","N/A"),"N/A")
-        return team,(x.get("points","N/A"),x.get("divisionSequence","N/A"),f"{w}-{l}-{o}" if games else "N/A")
+            else: return team,(x.get("points","N/A"),ordinal(x.get("leagueSequence")),"N/A")
+        return team,(x.get("points","N/A"),ordinal(x.get("leagueSequence")),f"{w}-{l}-{o}" if games else "N/A")
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
         return dict(ex.map(one,sorted(teams)))
 
@@ -207,10 +274,11 @@ def build_report(pool,day):
     intro=f"Last night there {'was' if len(night)==1 else 'were'} {len(night)} {'game' if len(night)==1 else 'games'} played and {goals} {'goal' if goals==1 else 'goals'} scored." if night else "There were no NHL games last night."
     for (d,g),hits in sorted(zip(past,highlights),key=lambda z:z[0][0],reverse=True):
         when="last night" if d==last else f"on {d:%A}"
-        for name,goals,pts in hits:
-            if goals>=3: intro+=f" {name} scored a hat trick {when} ({goals} goals)."
-            if pts>=4: intro+=f" {name} recorded {pts} points {when}."
-    out+=para(intro)+para("Here’s what happened in the pool:")
+        for name,goals,pts,team in hits:
+            tag=logo(team)+h(name)
+            if goals>=3: intro+=f" {tag} scored a hat trick {h(when)} ({goals} goals)."
+            if pts>=4: intro+=f" {tag} recorded {pts} points {h(when)}."
+    out+="<p>"+intro+"</p>"+para("Here’s what happened in the pool:")
     s=summarize(pool,logs,first,last,draft)
     out+=render_period(s,played=bool(past))
     if day.weekday()==6:
@@ -223,8 +291,8 @@ def build_report(pool,day):
             a,b=g["awayTeam"],g["homeTeam"]
             if a["score"]<b["score"]: a,b=b,a
             typ=g.get("gameOutcome",{}).get("lastPeriodType")
-            scores.append(f"{a['abbrev']} {a['score']} – {b['abbrev']} {b['score']}"+(f" ({typ})" if typ in ("OT","SO") else ""))
-        out+=field(f"{d:%A}","; ".join(scores) or "No NHL games played.")
+            scores.append(logo(a["abbrev"],16)+h(a["abbrev"])+f" {a['score']} – "+logo(b["abbrev"],16)+h(b["abbrev"])+f" {b['score']}"+(f" ({typ})" if typ in ("OT","SO") else ""))
+        out+="<h3>"+h(f"{d:%A}")+"</h3><p>"+("; ".join(scores) if scores else "No NHL games played.")+"</p>"
     out+=section("Looking Ahead")+para(f"{day:%b %d}–{future:%b %d}")
     upcoming=dates(day,future)
     teams_by_day={d:{g[side]["abbrev"] for g in slate[d] for side in ("homeTeam","awayTeam")} for d in upcoming}
@@ -245,12 +313,19 @@ def build_report(pool,day):
     out+="<h3>Scheduled Player Games</h3>"+table(["Contestant",*[d.strftime("%a") for d in upcoming],"Total"],rows,True)+para("Parentheses: injured player appearances included. Team schedules do not guarantee player participation." if pool["end"]==str(last) else "Historical replay: injury status unavailable as of report date.")
     clubs=set().union(*teams_by_day.values())
     stats=team_stats(last,clubs) if clubs else {}
-    out+="<h3>Upcoming NHL Games</h3>"+para("PTS = season standings points; DIV = divisional rank; L5 = last five games (W-L-OTL).")
+    out+="<h3>Upcoming NHL Games</h3>"+para("PTS = season standings points; LG = league rank (1–32); L5 = last five games (W-L-OTL).")
+    first_matchup=True
     for d in upcoming:
         out+=f"<h4>{d:%A}</h4>"
         if not slate[d]: out+=para("No NHL games scheduled.")
         for g in slate[d]:
-            out+=table(["Matchup","PTS","DIV","L5"],[(g[side]["abbrev"]+(" (Away)" if side=="awayTeam" else " (Home)"),*stats.get(g[side]["abbrev"],("N/A",)*3)) for side in ("awayTeam","homeTeam")])
+            rows=[]
+            for side in ("awayTeam","homeTeam"):
+                team=g[side]["abbrev"]
+                text=logo(team)+h(team)+(" @" if side=="awayTeam" else "")
+                rows.append((Markup(text),*stats.get(team,("N/A",)*3)))
+            out+=table(["Matchup","PTS","LG","L5"],rows,compact_header=not first_matchup)
+            first_matchup=False
     out+=f"<p><a href='{DASHBOARD}'>View the full Batspool2027 dashboard.</a></p>"
     return SUBJECTS[day.weekday()]+" | Batspool2027", "<html><body style='font-family:Arial,sans-serif;color:#000;max-width:660px;margin:auto'>"+out+"</body></html>"
 
