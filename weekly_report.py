@@ -129,8 +129,8 @@ def summarize(pool, logs, first, last, draft):
 
 def h(v): return html.escape(str(v))
 def para(s): return "<p>"+h(s)+"</p>"
-def section(s): return "<hr><h2>"+h(s)+"</h2>"
-def field(label,value): return "<h3>"+h(label)+"</h3>"+para(value)
+def section(s): return '<hr><h2 style="text-align:center">'+h(s)+"</h2>"
+def field(label,value): return '<h3 style="text-align:center">'+h(label)+"</h3>"+para(value)
 
 class Markup(str):
     """Trusted, internally generated HTML for a table cell."""
@@ -151,6 +151,48 @@ def ordinal(value):
     suffix = "th" if 11 <= value % 100 <= 13 else {1:"st",2:"nd",3:"rd"}.get(value % 10, "th")
     return str(value) + suffix
 
+def gradient(value, minimum, maximum, colors):
+    """Interpolate RGB colours; equal-valued ranges remain neutral white."""
+    if maximum <= minimum:
+        return "#ffffff"
+    fraction = min(1.0, max(0.0, (value - minimum) / (maximum - minimum)))
+    segment = min(len(colors)-2, int(fraction * (len(colors)-1)))
+    weight = fraction * (len(colors)-1) - segment
+    a, b = colors[segment], colors[segment + 1]
+    rgb = tuple(round(a[i] * (1 - weight) + b[i] * weight) for i in range(3))
+    return "#" + "".join(f"{v:02x}" for v in rgb)
+
+
+def scheduled_games_table(headers, rows):
+    """One red-white-blue day-cell range, independent white-grey total range."""
+    day_values = [cell[0] for row in rows for cell in row[1:-1]]
+    total_values = [row[-1][0] for row in rows]
+    day_min, day_max = (min(day_values), max(day_values)) if day_values else (0, 0)
+    total_min, total_max = (min(total_values), max(total_values)) if total_values else (0, 0)
+    out = '<table style="border-collapse:collapse;width:100%;color:#000">'
+    out += "<tr>" + "".join(
+        '<th style="padding:5px;background:#e8edf2;text-align:center;color:#000">'
+        + h(x) + "</th>" for x in headers) + "</tr>"
+    for row in rows:
+        out += "<tr>"
+        for index, cell in enumerate(row):
+            if index == 0:
+                value, background = cell, "#fff"
+            else:
+                value = str(cell[0]) + (f" ({cell[1]})" if cell[1] else "")
+                if index == len(row)-1:
+                    background = gradient(cell[0], total_min, total_max,
+                                          [(255,255,255),(175,181,190)])
+                else:
+                    background = gradient(cell[0], day_min, day_max,
+                                          [(241,161,166),(255,255,255),(137,179,228)])
+            out += ('<td style="padding:6px 5px;border-bottom:1px solid #ddd;'
+                    f'background:{background};color:#000;text-align:'
+                    + ("left" if index == 0 else "center") + '">' + h(value) + "</td>")
+        out += "</tr>"
+    return out + "</table>"
+
+
 def table(headers, rows, heat=False, compact_header=False):
     out='<table style="border-collapse:collapse;width:100%;color:#000">'
     if compact_header:
@@ -161,7 +203,7 @@ def table(headers, rows, heat=False, compact_header=False):
             for _ in headers) + '</tr>'
     else:
         out += '<tr>' + ''.join(
-            '<th style="padding:5px;background:#e8edf2;text-align:left;color:#000">'+h(x)+'</th>'
+            '<th style="padding:5px;background:#e8edf2;text-align:center;color:#000">'+h(x)+'</th>'
             for x in headers) + '</tr>'
     for i,row in enumerate(rows):
         out += "<tr>"
@@ -205,20 +247,20 @@ def render_period(s,weekly=False,played=True):
     if weekly:
         order=s["ordered"]
         cutoff=s["delta"][order[min(2,len(order)-1)]] if order else 0
-        out+="<h3>Top 3 Contestants of the Week</h3>"+(table(["Contestant","PTS"],[(n,s["delta"][n]) for n in order if s["delta"][n]>=cutoff]) if played else para("N/A"))
+        out+='<h3 style="text-align:center">Top 3 Contestants of the Week</h3>'+(table(["Contestant","PTS"],[(n,s["delta"][n]) for n in order if s["delta"][n]>=cutoff]) if played else para("N/A"))
         picks=sorted((p for p in s["rounds"] if p and p["points"]>0),key=player_key)
         if picks:
-            out+="<h3>Top 12 Picks of the Week</h3>"+para("Best player this week per draft round, sorted by points.")
+            out+='<h3 style="text-align:center">Top 12 Picks of the Week</h3>'+para("Best player this week per draft round, sorted by points.")
     else:
         out+=field("Top Contestant",leaders(s["delta"],True) if played else "N/A")
         picks=top_picks(s["players"])
         if picks:
-            out+=f"<h3>Top {len(picks)} Picks</h3>"
+            out+=f'<h3 style="text-align:center">Top {len(picks)} Picks</h3>'
     if picks:
         out+=table(["Player","PTS","Round","Contestant"],[(player_label(p["name"],p["team"]),p["points"],p["round"],p["owner"]) for p in picks])
     if weekly:
         # Both highlights use player logo information from the reporting roster.
-        out+="<h3>Most Points by a Player in One Day</h3>"+peak_players_html(s["pd"],by_name)
+        out+='<h3 style="text-align:center">Most Points by a Player in One Day</h3>'+peak_players_html(s["pd"],by_name)
         out+=field("Most Points by a Contestant in One Day",peak([(v,n,d) for (n,d),v in s["cd"].items()]))
         pace=s["pace"]
         out+=field("Best Jump in Scoring Pace this Week"," & ".join(sorted(n for n,v in pace.items() if v==max(pace.values()))) if pace and max(pace.values())>0 else "N/A")
@@ -228,7 +270,7 @@ def render_period(s,weekly=False,played=True):
         hits=[x for x in s["pd"] if x[0]>=4]
         if hits:
             parts=[h(x[3])+": "+logo(by_name.get(x[1]))+h(x[1])+f" — {x[0]} pts" for x in sorted(hits,key=lambda x:(x[3],-x[0],x[1]))]
-            out+="<h3>4+ Point Performances</h3><p>"+"; ".join(parts)+"</p>"
+            out+='<h3 style="text-align:center">4+ Point Performances</h3><p>'+"; ".join(parts)+"</p>"
         out+=field("Biggest Climb in Standings",move_text(s))
     return out
 
@@ -338,7 +380,7 @@ def build_report(pool,day):
         out+=render_period(week,True,any(p["points"] for p in week["players"]))
     out+=section("Around the NHL")
     for d in dates(first,last):
-        out+="<h3>"+h(f"{d:%A}")+"</h3>"
+        out+='<h3 style="text-align:center">'+h(f"{d:%A}")+"</h3>"
         out+=render_results(slate[d])
     out+=section("Looking Ahead")+para(f"{day:%b %d}–{future:%b %d}")
     upcoming=dates(day,future)
@@ -357,13 +399,13 @@ def build_report(pool,day):
                 if team in teams_by_day[d]: eligible.append(info)
             counts.append((len(eligible),sum(bool(p.get("injury")) for p in eligible) if pool["end"]==str(last) else 0))
         rows.append([c["name"],*counts,(sum(x[0] for x in counts),sum(x[1] for x in counts))])
-    out+="<h3>Scheduled Player Games</h3>"+table(["Contestant",*[d.strftime("%a") for d in upcoming],"Total"],rows,True)+para("Parentheses: injured player appearances included. Team schedules do not guarantee player participation." if pool["end"]==str(last) else "Historical replay: injury status unavailable as of report date.")
+    out+='<h3 style="text-align:center">Scheduled Player Games</h3>'+scheduled_games_table(["Contestant",*[d.strftime("%a") for d in upcoming],"Total"],rows)+para("Parentheses: injured player appearances included. Team schedules do not guarantee player participation." if pool["end"]==str(last) else "Historical replay: injury status unavailable as of report date.")
     clubs=set().union(*teams_by_day.values())
     stats=team_stats(last,clubs) if clubs else {}
-    out+="<h3>Upcoming NHL Games</h3>"+para("PTS = season standings points; LG = league rank (1–32); L5 = last five games (W-L-OTL).")
+    out+='<h3 style="text-align:center">Upcoming NHL Games</h3>'+para("PTS = season standings points; LG = league rank (1–32); L5 = last five games (W-L-OTL).")
     first_matchup=True
     for d in upcoming:
-        out+=f"<h4>{d:%A}</h4>"
+        out+=f'<h4 style="text-align:center">{d:%A}</h4>'
         if not slate[d]: out+=para("No NHL games scheduled.")
         for g in slate[d]:
             rows=[]
