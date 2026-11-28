@@ -166,42 +166,55 @@ class DisplayRules(unittest.TestCase):
         with self.assertRaises(ValueError):
             wr.render_results([game])
 
-    def test_schedule_heatmaps_share_day_range_and_isolate_total(self):
-        rows=[
-            ["A",(2,1),(8,0),(10,1)],
-            ["B",(5,0),(5,2),(10,2)],
-            ["C",(8,0),(2,0),(10,0)],
+    def test_schedule_blue_bands_and_asterisks(self):
+        rows = [
+            ["A", (1,1), (4,2), (5,3)],
+            ["B", (7,0), (10,1), (17,1)],
+            ["C", (5,0), (8,0), (13,0)],
         ]
-        markup=wr.scheduled_games_table(["Contestant","Fri","Sat","Total"],rows)
-        self.assertIn("background:#f1a1a6",markup)
-        self.assertIn("background:#89b3e4",markup)
-        self.assertNotIn("background:#ffffff;text-align:center", markup)
-        self.assertIn("background:#ffffff",markup)
-        self.assertNotIn("background:#ffffff;text-align:center",markup)
-        self.assertIn("text-align:center",markup)
-        self.assertIn(" (2)",markup)
-        # Identical totals receive identical shades regardless of day counts.
-        self.assertEqual(markup.count("background:#ffffff"),3)
-        # This fixture contains min, midpoint and max, not all four bins.
-        self.assertIn("background:#b0aec8", markup)
-        self.assertNotIn("rgb(",markup)
+        markup = wr.scheduled_games_table(["Contestant","Fri","Sat","Total"],rows)
+        for color in ("#dfedf9","#a6c8eb","#5e97cb"):
+            self.assertIn(f"background:{color}",markup)
+        self.assertNotIn("#f1a1a6",markup)
+        self.assertIn(">1*</td>",markup)
+        self.assertIn(">4**</td>",markup)
+        self.assertIn(">5***</td>",markup)
+        self.assertIn(">17*</td>",markup)
+        self.assertNotIn("(3)",markup)
+        self.assertIn('width:34.00%',markup)
+        self.assertIn('width:24.00%',markup)
+        self.assertIn('width:18.00%',markup)
+        self.assertIn('background:#ffffff',markup)
+        self.assertIn('background:#afb5be',markup)
+        # Six daily cells, one shared range. No daily white cells.
+        self.assertNotIn('background:#ffffff;color:#000;text-align:center">1',markup)
 
-    def test_total_scale_distinct_from_daily_scale(self):
-        rows=[
-            ["A",(0,0),(2,0),(2,0)],
-            ["B",(5,0),(9,0),(14,0)],
-        ]
-        markup=wr.scheduled_games_table(["Contestant","Fri","Sat","Total"],rows)
-        self.assertIn("background:#afb5be",markup)
-        self.assertIn("background:#89b3e4",markup)
-        self.assertIn("background:#f1a1a6",markup)
+    def test_total_scale_stays_separate(self):
+        rows=[["A",(1,0),(2,0),(3,0)],["B",(9,0),(10,0),(19,0)]]
+        result=wr.scheduled_games_table(["Contestant","Fri","Sat","Total"],rows)
+        self.assertIn('background:#ffffff',result)
+        self.assertIn('background:#afb5be',result)
+        self.assertIn('background:#dfedf9',result)
+        self.assertIn('background:#5e97cb',result)
 
-    def test_empty_and_uniform_scheduled_ranges(self):
+    def test_uniform_and_empty_schedule(self):
         self.assertIn("</table>",wr.scheduled_games_table(["Contestant","Fri","Total"],[]))
         markup=wr.scheduled_games_table(["Contestant","Fri","Total"],[["A",(0,0),(0,0)]])
-        self.assertNotIn("background:#f1a1a6",markup)
-        self.assertNotIn("background:#89b3e4",markup)
-        self.assertIn("background:#bdabb5",markup)
+        self.assertIn('background:#a6c8eb',markup)
+        self.assertNotIn("#f1a1a6",markup)
+        self.assertIn('background:#ffffff',markup)
+
+    def test_upcoming_header_widths_and_labels(self):
+        out=wr.table(["Matchup","Pts","Rank","Last 5"],
+                     [[wr.Markup(wr.logo("MTL")+"MTL @"),42,"3rd","3-1-1"]])
+        self.assertIn("width:43%",out)
+        self.assertIn("width:12%",out)
+        self.assertIn("width:17%",out)
+        self.assertIn("width:28%",out)
+        self.assertIn(">Pts<",out)
+        self.assertIn(">Rank<",out)
+        self.assertIn(">Last 5<",out)
+
 
     def test_heading_centering(self):
         self.assertIn('text-align:center',wr.section("Around the NHL"))
