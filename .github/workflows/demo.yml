@@ -2,6 +2,17 @@ name: Publish public demo
 on:
   push:
     branches: [main]
+    # Only rebuild the public demo when its sources or the deployment workflow
+    # change; email/report edits must not launch irrelevant Pages deployments.
+    paths:
+      - 'render_chart.py'
+      - 'scripts/**'
+      - 'data/**'
+      - 'assets/**'
+      - 'images/**'
+      - 'static/**'
+      - 'requirements*.txt'
+      - '.github/workflows/demo.yml'
   workflow_dispatch:
 permissions:
   contents: read
