@@ -212,7 +212,8 @@ class DisplayRules(unittest.TestCase):
     def test_four_discrete_day_shades(self):
         rows = [
             ["A", (1, 0), (2, 0), (3, 0)],
-            ["B", (4, 0), (5, 0), (9, 0)],
+            ["B", (3, 0), (4, 0), (7, 0)],
+            ["C", (5, 0), (5, 0), (10, 0)],
         ]
         result = wr.scheduled_games_table(["Contestant", "Fri", "Sat", "Total"], rows)
         colours = ("#f1a1a6", "#d3a8b0", "#b0aec8", "#89b3e4")
