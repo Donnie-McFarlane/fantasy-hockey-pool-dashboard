@@ -203,7 +203,9 @@ class DisplayRules(unittest.TestCase):
 
     def test_heading_centering(self):
         self.assertIn('text-align:center',wr.section("Around the NHL"))
-        self.assertIn('text-align:center',wr.field("Top Contestant", "A"))
+        self.assertIn('text-align:left',wr.field("Top Contestant", "A"))
+        self.assertIn("font-weight:700",wr.subheading("Top Contestant"))
+        self.assertIn("border-bottom:2px",wr.section("Around the NHL"))
 
     def test_report_versions_are_shared(self):
         self.assertEqual(wr.SUBJECTS[2], "The SMT Report")
