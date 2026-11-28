@@ -222,20 +222,18 @@ class DisplayRules(unittest.TestCase):
         self.assertIn("font-weight:700",wr.subheading("Top Contestant"))
         self.assertIn("border-bottom:2px",wr.section("Around the NHL"))
 
-    def test_four_discrete_day_shades(self):
+    def test_three_discrete_blue_shades(self):
+        # Values across day columns share one set of 3 bins.
         rows = [
-            ["A", (1, 0), (2, 0), (3, 0)],
-            ["B", (3, 0), (4, 0), (7, 0)],
-            ["C", (5, 0), (5, 0), (10, 0)],
+            ["A", (0, 0), (4, 0), (4, 0)],
+            ["B", (8, 0), (12, 0), (20, 0)],
         ]
-        result = wr.scheduled_games_table(["Contestant", "Fri", "Sat", "Total"], rows)
-        colours = ("#f1a1a6", "#d3a8b0", "#b0aec8", "#89b3e4")
-        # Five day cells reduce to four unique bins, never pure white.
-        day_shades = [wr.scheduled_games_table(["Contestant", "Day", "Total"],
-                      [["A", (x, 0), (1, 0)], ["B", (y, 0), (1, 0)]])
-                      for x, y in ((1, 5), (2, 5), (3, 5), (4, 5))]
-        self.assertTrue(all(c in result for c in colours))
-        self.assertNotIn("background:#ffffff;text-align:center", result)
+        result = wr.scheduled_games_table(["Contestant","Fri","Sat","Total"], rows)
+        self.assertIn("background:#dfedf9", result)
+        self.assertIn("background:#a6c8eb", result)
+        self.assertIn("background:#5e97cb", result)
+        self.assertNotIn("#f1a1a6", result)
+        self.assertIn("background:#ffffff", result)  # Total's minimum alone
 
     def test_post_intro_centering_preserves_table_alignment(self):
         self.assertIn("text-align:center", wr.subheading("Scheduled Player Games"))
