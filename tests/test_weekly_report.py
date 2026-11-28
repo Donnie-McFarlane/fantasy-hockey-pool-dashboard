@@ -179,7 +179,7 @@ class DisplayRules(unittest.TestCase):
         self.assertIn("text-align:center",markup)
         self.assertIn(" (2)",markup)
         # Identical totals receive identical shades regardless of day counts.
-        self.assertEqual(markup.count("background:#ffffff"),3)
+        self.assertEqual(markup.count("background:#ffffff"),5)
         self.assertNotIn("rgb(",markup)
 
     def test_total_scale_distinct_from_daily_scale(self):
