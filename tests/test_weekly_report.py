@@ -115,22 +115,47 @@ class DisplayRules(unittest.TestCase):
         self.assertIn("MTL_light.svg",txt)
         self.assertIn("Sample Player",txt)
 
-    def test_scoreboard_table_and_logo_size(self):
+    def test_home_away_scoreboard_is_centered_and_headerless(self):
         games=[{"awayTeam":{"abbrev":"TOR","score":2},
                 "homeTeam":{"abbrev":"MTL","score":4},
                 "gameOutcome":{"lastPeriodType":"REG"}},
                {"awayTeam":{"abbrev":"BOS","score":3},
                 "homeTeam":{"abbrev":"NYR","score":2},
-                "gameOutcome":{"lastPeriodType":"OT"}}]
+                "gameOutcome":{"lastPeriodType":"OT"}},
+               {"awayTeam":{"abbrev":"LAK","score":1},
+                "homeTeam":{"abbrev":"SJS","score":2},
+                "gameOutcome":{"lastPeriodType":"SO"}}]
         output=wr.render_results(games)
-        self.assertIn(">Winner<",output)
-        self.assertIn(">Loser<",output)
-        self.assertIn(">Score<",output)
-        self.assertIn(">OT<",output)
-        self.assertIn(">REG<",output)
-        self.assertIn("MTL_light.svg",output)
-        self.assertIn('width="26" height="26"',output)
-        self.assertNotIn(" (Home)",output)
+        self.assertNotIn("<th", output)
+        self.assertNotIn("Winner", output)
+        self.assertNotIn("Loser", output)
+        self.assertNotIn("REG", output)
+        self.assertIn(">OT</span>", output)
+        self.assertIn(">SO</span>", output)
+        self.assertIn("MTL_light.svg", output)
+        self.assertIn('width="26" height="26"', output)
+        self.assertIn("text-align:right", output)
+        self.assertIn("text-align:left", output)
+        self.assertIn("text-align:center", output)
+        self.assertIn('width:27px;text-align:right', output)
+        self.assertIn('width:16px;text-align:center', output)
+        self.assertIn('width:27px;text-align:left', output)
+        self.assertIn("<strong>4</strong>", output)
+        self.assertIn("<strong>3</strong>", output)
+        self.assertIn("<strong>2</strong>", output)
+        self.assertNotIn(" (Home)", output)
+        self.assertNotIn(" (Away)", output)
+        # Home appears before Away, independently of who won.
+        self.assertLess(output.index("MTL_light.svg"),output.index("TOR_light.svg"))
+        self.assertLess(output.index("NYR_light.svg"),output.index("BOS_light.svg"))
+
+    def test_tied_zero_score_does_not_invent_winner(self):
+        game={"homeTeam":{"abbrev":"NYR","score":0},
+              "awayTeam":{"abbrev":"BOS","score":0},
+              "gameOutcome":{"lastPeriodType":"SO"}}
+        output=wr.render_results([game])
+        self.assertNotIn("<strong>0</strong>",output)
+        self.assertIn(">SO</span>",output)
 
     def test_empty_scoreboard(self):
         self.assertIn("No NHL games played.",wr.render_results([]))
