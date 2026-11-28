@@ -137,7 +137,7 @@ def section(s):
 
 def subheading(s):
     return ('<h3 style="font-family:Arial,Helvetica,sans-serif;font-size:14px;'
-            'font-weight:700;line-height:1.4;text-align:left;color:#274b64;'
+            'font-weight:700;line-height:1.4;text-align:center;color:#274b64;'
             'margin:19px 0 8px">' + h(s) + '</h3>')
 
 def field(label,value): return subheading(label)+para(value)
@@ -194,10 +194,14 @@ def scheduled_games_table(headers, rows):
                     background = gradient(cell[0], total_min, total_max,
                                           [(255,255,255),(175,181,190)])
                 else:
-                    # Uniform daily values have a neutral blend, never white.
-                    background = (gradient(cell[0], day_min, day_max,
-                                           [(241,161,166),(137,179,228)])
-                                  if day_max > day_min else "#bdabb5")
+                    # Four equal-width bins across the entire combined day-cell range.
+                    # Each bin has a distinct colour; no white appears in this scale.
+                    shades = ("#f1a1a6", "#d3a8b0", "#b0aec8", "#89b3e4")
+                    if day_max > day_min:
+                        fraction = (cell[0] - day_min) / (day_max - day_min)
+                        background = shades[min(3, int(fraction * 4))]
+                    else:
+                        background = "#bdabb5"
             out += ('<td style="padding:6px 5px;border-bottom:1px solid #ddd;'
                     f'background:{background};color:#000;text-align:'
                     + ("left" if index == 0 else "center") + '">' + h(value) + "</td>")
@@ -206,7 +210,7 @@ def scheduled_games_table(headers, rows):
 
 
 def table(headers, rows, heat=False, compact_header=False):
-    out='<table style="border-collapse:collapse;width:100%;color:#000">'
+    out='<table style="border-collapse:collapse;width:100%;color:#000;text-align:left">'
     if compact_header:
         # Keep the visual divider between successive matchups without
         # repeating column labels (roughly half the normal header height).
@@ -388,6 +392,9 @@ def build_report(pool,day):
             if goals>=3: intro+=f" {tag} scored a hat trick {h(when)} ({goals} goals)."
             if pts>=4: intro+=f" {tag} recorded {pts} points {h(when)}."
     out+="<p>"+intro+"</p>"+para("Here’s what happened in the pool:")
+    # Centre all non-table content following the introduction, retaining
+    # table-specific alignment for player names, scores, and numeric cells.
+    out+='<div style="text-align:center">'
     s=summarize(pool,logs,first,last,draft)
     out+=render_period(s,played=bool(past))
     if day.weekday()==6:
@@ -420,7 +427,7 @@ def build_report(pool,day):
     out+=subheading("Upcoming NHL Games")+para("PTS = season standings points; LG = league rank (1–32); L5 = last five games (W-L-OTL).")
     first_matchup=True
     for d in upcoming:
-        out+=f'<h4 style="font-size:13px;color:#35586f;margin:14px 0 5px">{d:%A}</h4>'
+        out+=f'<h4 style="font-size:13px;text-align:center;color:#35586f;margin:14px 0 5px">{d:%A}</h4>'
         if not slate[d]: out+=para("No NHL games scheduled.")
         for g in slate[d]:
             rows=[]
@@ -431,6 +438,7 @@ def build_report(pool,day):
             out+=table(["Matchup","PTS","LG","L5"],rows,compact_header=not first_matchup)
             first_matchup=False
     out+=f"<p><a href='{DASHBOARD}'>View the full Batspool2027 dashboard.</a></p>"
+    out+="</div>"
     return SUBJECTS[day.weekday()]+" | Batspool2027", "<html><body style='font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.55;color:#223140;max-width:660px;margin:auto;padding:12px 16px'>"+out+"</body></html>"
 
 def main():
