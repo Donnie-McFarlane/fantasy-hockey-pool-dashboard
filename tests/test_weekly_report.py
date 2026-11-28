@@ -166,6 +166,42 @@ class DisplayRules(unittest.TestCase):
         with self.assertRaises(ValueError):
             wr.render_results([game])
 
+    def test_schedule_heatmaps_share_day_range_and_isolate_total(self):
+        rows=[
+            ["A",(2,1),(8,0),(10,1)],
+            ["B",(5,0),(5,2),(10,2)],
+            ["C",(8,0),(2,0),(10,0)],
+        ]
+        markup=wr.scheduled_games_table(["Contestant","Fri","Sat","Total"],rows)
+        self.assertIn("background:#f1a1a6",markup)
+        self.assertIn("background:#89b3e4",markup)
+        self.assertIn("background:#ffffff",markup)
+        self.assertIn("text-align:center",markup)
+        self.assertIn(" (2)",markup)
+        # Identical totals receive identical shades regardless of day counts.
+        self.assertEqual(markup.count("background:#ffffff"),3)
+        self.assertNotIn("rgb(",markup)
+
+    def test_total_scale_distinct_from_daily_scale(self):
+        rows=[
+            ["A",(0,0),(2,0),(2,0)],
+            ["B",(5,0),(9,0),(14,0)],
+        ]
+        markup=wr.scheduled_games_table(["Contestant","Fri","Sat","Total"],rows)
+        self.assertIn("background:#afb5be",markup)
+        self.assertIn("background:#89b3e4",markup)
+        self.assertIn("background:#f1a1a6",markup)
+
+    def test_empty_and_uniform_scheduled_ranges(self):
+        self.assertIn("</table>",wr.scheduled_games_table(["Contestant","Fri","Total"],[]))
+        markup=wr.scheduled_games_table(["Contestant","Fri","Total"],[["A",(0,0),(0,0)]])
+        self.assertNotIn("background:#f1a1a6",markup)
+        self.assertNotIn("background:#89b3e4",markup)
+
+    def test_heading_centering(self):
+        self.assertIn('text-align:center',wr.section("Around the NHL"))
+        self.assertIn('text-align:center',wr.field("Top Contestant", "A"))
+
     def test_report_versions_are_shared(self):
         self.assertEqual(wr.SUBJECTS[2], "The SMT Report")
         self.assertEqual(wr.SUBJECTS[4], "The Friday Check-Up")
