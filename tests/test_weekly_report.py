@@ -115,6 +115,32 @@ class DisplayRules(unittest.TestCase):
         self.assertIn("MTL_light.svg",txt)
         self.assertIn("Sample Player",txt)
 
+    def test_scoreboard_table_and_logo_size(self):
+        games=[{"awayTeam":{"abbrev":"TOR","score":2},
+                "homeTeam":{"abbrev":"MTL","score":4},
+                "gameOutcome":{"lastPeriodType":"REG"}},
+               {"awayTeam":{"abbrev":"BOS","score":3},
+                "homeTeam":{"abbrev":"NYR","score":2},
+                "gameOutcome":{"lastPeriodType":"OT"}}]
+        output=wr.render_results(games)
+        self.assertIn(">Winner<",output)
+        self.assertIn(">Loser<",output)
+        self.assertIn(">Score<",output)
+        self.assertIn(">OT<",output)
+        self.assertIn(">REG<",output)
+        self.assertIn("MTL_light.svg",output)
+        self.assertIn('width="26" height="26"',output)
+        self.assertNotIn(" (Home)",output)
+
+    def test_empty_scoreboard(self):
+        self.assertIn("No NHL games played.",wr.render_results([]))
+
+    def test_missing_result_scores_rejected(self):
+        game={"awayTeam":{"abbrev":"TOR"},
+              "homeTeam":{"abbrev":"MTL","score":2}}
+        with self.assertRaises(ValueError):
+            wr.render_results([game])
+
     def test_report_versions_are_shared(self):
         self.assertEqual(wr.SUBJECTS[2], "The SMT Report")
         self.assertEqual(wr.SUBJECTS[4], "The Friday Check-Up")
