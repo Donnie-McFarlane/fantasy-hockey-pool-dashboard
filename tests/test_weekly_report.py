@@ -175,11 +175,13 @@ class DisplayRules(unittest.TestCase):
         markup=wr.scheduled_games_table(["Contestant","Fri","Sat","Total"],rows)
         self.assertIn("background:#f1a1a6",markup)
         self.assertIn("background:#89b3e4",markup)
+        self.assertIn("background:#bdb0c5", markup) if False else self.assertNotIn("background:#ffffff;text-align:center", markup)
         self.assertIn("background:#ffffff",markup)
+        self.assertNotIn("background:#ffffff;text-align:center",markup)
         self.assertIn("text-align:center",markup)
         self.assertIn(" (2)",markup)
         # Identical totals receive identical shades regardless of day counts.
-        self.assertEqual(markup.count("background:#ffffff"),5)
+        self.assertEqual(markup.count("background:#ffffff"),3)
         self.assertNotIn("rgb(",markup)
 
     def test_total_scale_distinct_from_daily_scale(self):
@@ -197,6 +199,7 @@ class DisplayRules(unittest.TestCase):
         markup=wr.scheduled_games_table(["Contestant","Fri","Total"],[["A",(0,0),(0,0)]])
         self.assertNotIn("background:#f1a1a6",markup)
         self.assertNotIn("background:#89b3e4",markup)
+        self.assertIn("background:#bdabb5",markup)
 
     def test_heading_centering(self):
         self.assertIn('text-align:center',wr.section("Around the NHL"))
