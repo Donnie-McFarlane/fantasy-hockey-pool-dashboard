@@ -182,6 +182,8 @@ class DisplayRules(unittest.TestCase):
         self.assertIn(" (2)",markup)
         # Identical totals receive identical shades regardless of day counts.
         self.assertEqual(markup.count("background:#ffffff"),3)
+        self.assertIn("background:#d3a8b0", markup)
+        self.assertIn("background:#b0aec8", markup)
         self.assertNotIn("rgb(",markup)
 
     def test_total_scale_distinct_from_daily_scale(self):
@@ -203,9 +205,28 @@ class DisplayRules(unittest.TestCase):
 
     def test_heading_centering(self):
         self.assertIn('text-align:center',wr.section("Around the NHL"))
-        self.assertIn('text-align:left',wr.field("Top Contestant", "A"))
+        self.assertIn('text-align:center',wr.field("Top Contestant", "A"))
         self.assertIn("font-weight:700",wr.subheading("Top Contestant"))
         self.assertIn("border-bottom:2px",wr.section("Around the NHL"))
+
+    def test_four_discrete_day_shades(self):
+        rows = [
+            ["A", (1, 0), (2, 0), (3, 0)],
+            ["B", (4, 0), (5, 0), (9, 0)],
+        ]
+        result = wr.scheduled_games_table(["Contestant", "Fri", "Sat", "Total"], rows)
+        colours = ("#f1a1a6", "#d3a8b0", "#b0aec8", "#89b3e4")
+        # Five day cells reduce to four unique bins, never pure white.
+        day_shades = [wr.scheduled_games_table(["Contestant", "Day", "Total"],
+                      [["A", (x, 0), (1, 0)], ["B", (y, 0), (1, 0)]])
+                      for x, y in ((1, 5), (2, 5), (3, 5), (4, 5))]
+        self.assertTrue(all(c in result for c in colours))
+        self.assertNotIn("background:#ffffff;text-align:center", result)
+
+    def test_post_intro_centering_preserves_table_alignment(self):
+        self.assertIn("text-align:center", wr.subheading("Scheduled Player Games"))
+        self.assertIn("text-align:left", wr.table(["Name"], [["Example"]]))
+        self.assertIn('text-align:center', wr.section("Looking Ahead"))
 
     def test_report_versions_are_shared(self):
         self.assertEqual(wr.SUBJECTS[2], "The SMT Report")
