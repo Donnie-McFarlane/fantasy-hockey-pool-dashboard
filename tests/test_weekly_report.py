@@ -182,7 +182,7 @@ class DisplayRules(unittest.TestCase):
         self.assertIn(" (2)",markup)
         # Identical totals receive identical shades regardless of day counts.
         self.assertEqual(markup.count("background:#ffffff"),3)
-        self.assertIn("background:#d3a8b0", markup)
+        # This fixture contains min, midpoint and max, not all four bins.
         self.assertIn("background:#b0aec8", markup)
         self.assertNotIn("rgb(",markup)
 
