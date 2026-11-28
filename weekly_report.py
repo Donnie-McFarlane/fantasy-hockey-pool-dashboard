@@ -174,12 +174,15 @@ def gradient(value, minimum, maximum, colors):
 
 
 def scheduled_games_table(headers, rows):
-    """One red-to-blue day-cell range, independent white-to-grey total range."""
+    """Three shared light-to-dark blue bands for days; separate white-grey totals."""
     day_values = [cell[0] for row in rows for cell in row[1:-1]]
     total_values = [row[-1][0] for row in rows]
     day_min, day_max = (min(day_values), max(day_values)) if day_values else (0, 0)
     total_min, total_max = (min(total_values), max(total_values)) if total_values else (0, 0)
-    out = '<table style="border-collapse:collapse;width:100%;color:#000">'
+    out = '<table style="border-collapse:collapse;width:100%;color:#000;table-layout:fixed">'
+    day_count = max(0, len(headers)-2)
+    widths = [34] + ([48/day_count] * day_count if day_count else []) + [18]
+    out += "<colgroup>" + "".join(f'<col style="width:{w:.2f}%">' for w in widths) + "</colgroup>"
     out += "<tr>" + "".join(
         '<th style="padding:7px 5px;background:#e9eff4;text-align:center;color:#29475c;font-size:12px;font-weight:700">'
         + h(x) + "</th>" for x in headers) + "</tr>"
@@ -189,19 +192,19 @@ def scheduled_games_table(headers, rows):
             if index == 0:
                 value, background = cell, "#fff"
             else:
-                value = str(cell[0]) + (f" ({cell[1]})" if cell[1] else "")
+                # One asterisk per scheduled appearance of an injured player.
+                value = str(cell[0]) + ("*" * cell[1] if cell[1] else "")
                 if index == len(row)-1:
                     background = gradient(cell[0], total_min, total_max,
                                           [(255,255,255),(175,181,190)])
                 else:
-                    # Four equal-width bins across the entire combined day-cell range.
-                    # Each bin has a distinct colour; no white appears in this scale.
-                    shades = ("#f1a1a6", "#d3a8b0", "#b0aec8", "#89b3e4")
+                    # All day cells share one range and three equal-width bands.
+                    shades = ("#dfedf9", "#a6c8eb", "#5e97cb")
                     if day_max > day_min:
                         fraction = (cell[0] - day_min) / (day_max - day_min)
-                        background = shades[min(3, int(fraction * 4))]
+                        background = shades[min(2, int(fraction * 3))]
                     else:
-                        background = "#bdabb5"
+                        background = shades[1]
             out += ('<td style="padding:6px 5px;border-bottom:1px solid #ddd;'
                     f'background:{background};color:#000;text-align:'
                     + ("left" if index == 0 else "center") + '">' + h(value) + "</td>")
@@ -211,6 +214,10 @@ def scheduled_games_table(headers, rows):
 
 def table(headers, rows, heat=False, compact_header=False):
     out='<table style="border-collapse:collapse;width:100%;color:#000;text-align:left">'
+    if headers == ["Matchup", "Pts", "Rank", "Last 5"]:
+        # Make matchup / last-five information comfortably readable on phones.
+        out += '<colgroup><col style="width:43%"><col style="width:12%"><col style="width:17%"><col style="width:28%"></colgroup>'
+        out = out.replace('color:#000;text-align:left">', 'color:#000;text-align:left;table-layout:fixed">', 1)
     if compact_header:
         # Keep the visual divider between successive matchups without
         # repeating column labels (roughly half the normal header height).
@@ -263,7 +270,7 @@ def render_period(s,weekly=False,played=True):
     if weekly:
         order=s["ordered"]
         cutoff=s["delta"][order[min(2,len(order)-1)]] if order else 0
-        out+=subheading("Top 3 Contestants of the Week")+(table(["Contestant","PTS"],[(n,s["delta"][n]) for n in order if s["delta"][n]>=cutoff]) if played else para("N/A"))
+        out+=subheading("Top 3 Contestants of the Week")+(table(["Contestant","Pts"],[(n,s["delta"][n]) for n in order if s["delta"][n]>=cutoff]) if played else para("N/A"))
         picks=sorted((p for p in s["rounds"] if p and p["points"]>0),key=player_key)
         if picks:
             out+=subheading("Top 12 Picks of the Week")+para("Best player this week per draft round, sorted by points.")
@@ -273,7 +280,7 @@ def render_period(s,weekly=False,played=True):
         if picks:
             out+=subheading(f"Top {len(picks)} Picks")
     if picks:
-        out+=table(["Player","PTS","Round","Contestant"],[(player_label(p["name"],p["team"]),p["points"],p["round"],p["owner"]) for p in picks])
+        out+=table(["Player","Pts","Round","Contestant"],[(player_label(p["name"],p["team"]),p["points"],p["round"],p["owner"]) for p in picks])
     if weekly:
         # Both highlights use player logo information from the reporting roster.
         out+=subheading("Most Points by a Player in One Day")+peak_players_html(s["pd"],by_name)
@@ -281,7 +288,7 @@ def render_period(s,weekly=False,played=True):
         pace=s["pace"]
         out+=field("Best Jump in Scoring Pace this Week"," & ".join(sorted(n for n,v in pace.items() if v==max(pace.values()))) if pace and max(pace.values())>0 else "N/A")
         out+=field("Biggest Standings Changes this Week",move_text(s,True))
-        out+=section("Current Standings")+table(["Rank","Contestant","PTS","Week","+/-","Behind lead","Behind money"],[(s["ra"][n],n,s["after"][n],s["delta"][n],f"{s['moves'][n]:+d}" if s["moves"][n] else "—",max(s["after"].values())-s["after"][n],max(0,sorted(s["after"].values(),reverse=True)[min(2,len(s["after"])-1)]-s["after"][n])) for n in sorted(s["names"],key=lambda n:(s["ra"][n],n))])
+        out+=section("Current Standings")+table(["Rank","Contestant","Pts","Week","+/-","Behind lead","Behind money"],[(s["ra"][n],n,s["after"][n],s["delta"][n],f"{s['moves'][n]:+d}" if s["moves"][n] else "—",max(s["after"].values())-s["after"][n],max(0,sorted(s["after"].values(),reverse=True)[min(2,len(s["after"])-1)]-s["after"][n])) for n in sorted(s["names"],key=lambda n:(s["ra"][n],n))])
     else:
         hits=[x for x in s["pd"] if x[0]>=4]
         if hits:
@@ -421,10 +428,10 @@ def build_report(pool,day):
                 if team in teams_by_day[d]: eligible.append(info)
             counts.append((len(eligible),sum(bool(p.get("injury")) for p in eligible) if pool["end"]==str(last) else 0))
         rows.append([c["name"],*counts,(sum(x[0] for x in counts),sum(x[1] for x in counts))])
-    out+=subheading("Scheduled Player Games")+scheduled_games_table(["Contestant",*[d.strftime("%a") for d in upcoming],"Total"],rows)+para("Parentheses: injured player appearances included. Team schedules do not guarantee player participation." if pool["end"]==str(last) else "Historical replay: injury status unavailable as of report date.")
+    out+=subheading("Scheduled Player Games")+scheduled_games_table(["Contestant",*[d.strftime("%a") for d in upcoming],"Total"],rows)+para("Each * indicates one scheduled player currently listed as injured. Scheduled appearances are not guaranteed participation." if pool["end"]==str(last) else "Historical replay: injury indicators may not reflect the original report date. Scheduled appearances are not guaranteed participation.")
     clubs=set().union(*teams_by_day.values())
     stats=team_stats(last,clubs) if clubs else {}
-    out+=subheading("Upcoming NHL Games")+para("PTS = season standings points; LG = league rank (1–32); L5 = last five games (W-L-OTL).")
+    out+=subheading("Upcoming NHL Games")+para("Pts = season standings points; Rank = NHL league position (1–32); Last 5 = wins–losses–overtime losses.")
     first_matchup=True
     for d in upcoming:
         out+=f'<h4 style="font-size:13px;text-align:center;color:#35586f;margin:14px 0 5px">{d:%A}</h4>'
@@ -435,7 +442,7 @@ def build_report(pool,day):
                 team=g[side]["abbrev"]
                 text=logo(team)+h(team)+(" @" if side=="awayTeam" else "")
                 rows.append((Markup(text),*stats.get(team,("N/A",)*3)))
-            out+=table(["Matchup","PTS","LG","L5"],rows,compact_header=not first_matchup)
+            out+=table(["Matchup","Pts","Rank","Last 5"],rows,compact_header=not first_matchup)
             first_matchup=False
     out+=f"<p><a href='{DASHBOARD}'>View the full Batspool2027 dashboard.</a></p>"
     out+="</div>"
