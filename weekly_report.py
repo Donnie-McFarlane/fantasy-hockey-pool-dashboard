@@ -135,7 +135,7 @@ def field(label,value): return "<h3>"+h(label)+"</h3>"+para(value)
 class Markup(str):
     """Trusted, internally generated HTML for a table cell."""
 
-def logo(team, size=19):
+def logo(team, size=26):
     if not isinstance(team, str) or not re.fullmatch(r"[A-Z]{2,4}", team):
         return ""
     url = f"https://assets.nhle.com/logos/nhl/svg/{team}_light.svg"
@@ -232,6 +232,30 @@ def render_period(s,weekly=False,played=True):
         out+=field("Biggest Climb in Standings",move_text(s))
     return out
 
+def render_results(games):
+    """Compact email-safe results table; winner first, with OT/SO indicated."""
+    if not games:
+        return para("No NHL games played.")
+    rows=[]
+    for g in games:
+        a,b=g["awayTeam"],g["homeTeam"]
+        a_score,b_score=a.get("score"),b.get("score")
+        if not isinstance(a_score,int) or not isinstance(b_score,int):
+            raise ValueError("Completed NHL game is missing scores")
+        if a_score < b_score:
+            a,b=b,a
+            a_score,b_score=b_score,a_score
+        typ=g.get("gameOutcome",{}).get("lastPeriodType")
+        result=typ if typ in ("OT","SO") else "REG"
+        rows.append((
+            Markup(logo(a["abbrev"])+h(a["abbrev"])),
+            a_score,
+            Markup(logo(b["abbrev"])+h(b["abbrev"])),
+            b_score,
+            result,
+        ))
+    return table(["Winner","Score","Loser","Score","Result"],rows)
+
 def box_highlights(g):
     b=fetch(API+f"gamecenter/{g['id']}/boxscore")
     rows=b["playerByGameStats"]
@@ -295,13 +319,8 @@ def build_report(pool,day):
         out+=render_period(week,True,any(p["points"] for p in week["players"]))
     out+=section("Around the NHL")
     for d in dates(first,last):
-        scores=[]
-        for g in slate[d]:
-            a,b=g["awayTeam"],g["homeTeam"]
-            if a["score"]<b["score"]: a,b=b,a
-            typ=g.get("gameOutcome",{}).get("lastPeriodType")
-            scores.append(logo(a["abbrev"],16)+h(a["abbrev"])+f" {a['score']} – "+logo(b["abbrev"],16)+h(b["abbrev"])+f" {b['score']}"+(f" ({typ})" if typ in ("OT","SO") else ""))
-        out+="<h3>"+h(f"{d:%A}")+"</h3><p>"+("; ".join(scores) if scores else "No NHL games played.")+"</p>"
+        out+="<h3>"+h(f"{d:%A}")+"</h3>"
+        out+=render_results(slate[d])
     out+=section("Looking Ahead")+para(f"{day:%b %d}–{future:%b %d}")
     upcoming=dates(day,future)
     teams_by_day={d:{g[side]["abbrev"] for g in slate[d] for side in ("homeTeam","awayTeam")} for d in upcoming}
