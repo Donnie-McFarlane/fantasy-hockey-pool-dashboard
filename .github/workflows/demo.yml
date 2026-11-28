@@ -35,5 +35,9 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+      # GitHub sometimes reports "Found 0 artifact(s)" immediately after
+      # a successful upload. Allow metadata to propagate before deployment.
+      - name: Allow Pages artifact metadata to propagate
+        run: sleep 15
       - uses: actions/deploy-pages@v4
         id: publish
