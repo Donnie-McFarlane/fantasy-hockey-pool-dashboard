@@ -1,0 +1,68 @@
+name: One-time Batspool Friday heatmap and centered headings preview
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/friday-heatmap-preview-once.yml']
+permissions:
+  contents: read
+jobs:
+  preview:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: live
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate formatting and syntax
+        run: |
+          python3 -m py_compile weekly_report.py
+          python3 -m unittest discover -s tests -p 'test_weekly_report.py'
+      - name: Restore existing protected scoring checkpoint
+        env:
+          LIVE_STATE_KEY: ${{ secrets.LIVE_STATE_KEY }}
+        run: |
+          test -n "$LIVE_STATE_KEY"
+          git fetch origin refs/heads/live-state:refs/remotes/origin/live-state
+          git show origin/live-state:scores.json.gpg > "$RUNNER_TEMP/scores.json.gpg"
+          gpg --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt \
+            --output "$RUNNER_TEMP/scores.json" "$RUNNER_TEMP/scores.json.gpg" <<< "$LIVE_STATE_KEY"
+      - name: Send Friday heatmap report only to sender
+        env:
+          CONTESTANT_NAMES: ${{ secrets.CONTESTANT_NAMES }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import datetime as dt
+          import json
+          import os
+          import smtplib
+          import ssl
+          from email.message import EmailMessage
+          from pathlib import Path
+          from render_chart import live_names, relabel
+          from weekly_report import build_report, SENDER
+          pool = json.loads((Path(os.environ["RUNNER_TEMP"]) / "scores.json").read_text())
+          pool = relabel(pool, live_names(pool))
+          subject, body = build_report(pool, dt.date(2026, 11, 27))
+          assert subject == "The Friday Check-Up | Batspool2027"
+          assert "Nov 25–Nov 26" in body
+          assert "Around the NHL" in body and "Scheduled Player Games" in body
+          assert "background:#" in body
+          assert 'text-align:center' in body
+          assert "Upcoming NHL Games" in body
+          msg = EmailMessage()
+          msg["From"] = SENDER
+          msg["To"] = SENDER
+          msg["Subject"] = subject + " — Updated Heatmap Preview"
+          msg.set_content("Friday, November 27 Batspool report with revised scheduled-player heatmaps and centered headings. Please view the HTML version.")
+          msg.add_alternative(body, subtype="html")
+          with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context(), timeout=30) as smtp:
+              smtp.login(SENDER, os.environ["GMAIL_APP_PASSWORD"])
+              if smtp.send_message(msg, to_addrs=[SENDER]):
+                  raise RuntimeError("Recipient rejected")
+          print("Updated Friday heatmap report accepted by Gmail SMTP for single recipient")
+          PY
+      - name: Remove local decrypted scoring data
+        if: always()
+        run: |
+          if [[ -f "$RUNNER_TEMP/scores.json" ]]; then shred -u "$RUNNER_TEMP/scores.json" || true; fi
