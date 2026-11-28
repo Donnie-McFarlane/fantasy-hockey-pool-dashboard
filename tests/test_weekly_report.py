@@ -175,7 +175,7 @@ class DisplayRules(unittest.TestCase):
         markup=wr.scheduled_games_table(["Contestant","Fri","Sat","Total"],rows)
         self.assertIn("background:#f1a1a6",markup)
         self.assertIn("background:#89b3e4",markup)
-        self.assertIn("background:#bdb0c5", markup) if False else self.assertNotIn("background:#ffffff;text-align:center", markup)
+        self.assertNotIn("background:#ffffff;text-align:center", markup)
         self.assertIn("background:#ffffff",markup)
         self.assertNotIn("background:#ffffff;text-align:center",markup)
         self.assertIn("text-align:center",markup)
