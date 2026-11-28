@@ -233,28 +233,47 @@ def render_period(s,weekly=False,played=True):
     return out
 
 def render_results(games):
-    """Compact email-safe results table; winner first, with OT/SO indicated."""
+    """Headerless home-score-away scoreboard, centred on the score dash.
+
+    Use fixed-width score halves so the dash stays horizontally centred even
+    for multi-digit scores. OT/SO is placed beneath the score, not beside it.
+    """
     if not games:
         return para("No NHL games played.")
-    rows=[]
-    for g in games:
-        a,b=g["awayTeam"],g["homeTeam"]
-        a_score,b_score=a.get("score"),b.get("score")
-        if not isinstance(a_score,int) or not isinstance(b_score,int):
-            raise ValueError("Completed NHL game is missing scores")
-        if a_score < b_score:
-            a,b=b,a
-            a_score,b_score=b_score,a_score
-        typ=g.get("gameOutcome",{}).get("lastPeriodType")
-        result=typ if typ in ("OT","SO") else "REG"
-        rows.append((
-            Markup(logo(a["abbrev"])+h(a["abbrev"])),
-            a_score,
-            Markup(logo(b["abbrev"])+h(b["abbrev"])),
-            b_score,
-            result,
-        ))
-    return table(["Winner","Score","Loser","Score","Result"],rows)
+    out = '<table role="presentation" style="width:100%;border-collapse:collapse;color:#000;table-layout:fixed">'
+    for index, g in enumerate(games):
+        home, away = g["homeTeam"], g["awayTeam"]
+        home_score, away_score = home.get("score"), away.get("score")
+        if (type(home_score) is not int or type(away_score) is not int
+                or home_score < 0 or away_score < 0):
+            raise ValueError("Completed NHL game is missing valid scores")
+        typ = g.get("gameOutcome", {}).get("lastPeriodType")
+        suffix = (f'<span style="display:block;font-size:11px;line-height:14px;'
+                  f'text-align:center;color:#000">{h(typ)}</span>'
+                  if typ in ("OT", "SO") else "")
+        home_text = f"<strong>{home_score}</strong>" if home_score > away_score else str(home_score)
+        away_text = f"<strong>{away_score}</strong>" if away_score > home_score else str(away_score)
+        score = (
+            '<div style="white-space:nowrap;text-align:center;color:#000">'
+            '<span style="display:inline-block;width:27px;text-align:right">'
+            + home_text
+            + '</span><span style="display:inline-block;width:16px;text-align:center">–</span>'
+            + '<span style="display:inline-block;width:27px;text-align:left">'
+            + away_text + '</span></div>' + suffix
+        )
+        background = "#f4f6f8" if index % 2 else "#fff"
+        cell_style = f"padding:6px 5px;vertical-align:middle;border-bottom:1px solid #ddd;background:{background};color:#000;"
+        out += (
+            '<tr>'
+            + f'<td style="{cell_style}width:39%;text-align:right;white-space:nowrap">'
+            + h(home["abbrev"]) + logo(home["abbrev"]) + '</td>'
+            + f'<td style="{cell_style}width:22%;text-align:center;white-space:nowrap">'
+            + score + '</td>'
+            + f'<td style="{cell_style}width:39%;text-align:left;white-space:nowrap">'
+            + logo(away["abbrev"]) + h(away["abbrev"]) + '</td>'
+            + '</tr>'
+        )
+    return out + "</table>"
 
 def box_highlights(g):
     b=fetch(API+f"gamecenter/{g['id']}/boxscore")
